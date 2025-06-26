@@ -220,10 +220,11 @@ foreach ($posts as &$post) {
     // If assignment, get submission info
     if ($post['post_type'] === 'assignment' && $isStudent) {
         $stmt = $conn->prepare("
-            SELECT submission_id, submitted_at, grade, remarks
-            FROM classops_submissions
-            WHERE post_id = ? AND student_usn = ?
-        ");
+    SELECT submission_id, submitted_at, grade, remarks, 
+           submission_file_name, submission_file_type
+    FROM classops_submissions
+    WHERE post_id = ? AND student_usn = ?
+");
         $stmt->bind_param("is", $post['post_id'], $auth['id']);
         $stmt->execute();
         $subResult = $stmt->get_result();
@@ -681,6 +682,21 @@ $conn->close();
                                                             <?php echo date('M j, Y g:i A', strtotime($post['submission']['submitted_at'])); ?>
                                                         </span>
                                                     </div>
+
+                                                    <?php if (!empty($post['submission']['submission_file_name'])): ?>
+                                                        <div class="mt-2">
+                                                            <span class="text-sm font-medium text-gray-700">Submitted file:</span>
+                                                            <div class="mt-1 flex items-center">
+                                                                <a href="download_submission.php?id=<?php echo $post['submission']['submission_id']; ?>"
+                                                                    class="flex items-center text-blue-600 hover:text-blue-800">
+                                                                    <i class="fas fa-file mr-1"></i>
+                                                                    <span
+                                                                        class="text-sm"><?php echo htmlspecialchars($post['submission']['submission_file_name']); ?></span>
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    <?php endif; ?>
+
                                                     <?php if ($post['submission']['grade']): ?>
                                                         <div class="mt-2 flex items-center">
                                                             <span class="text-sm font-medium text-gray-700 mr-2">Grade:</span>
@@ -1072,12 +1088,12 @@ $conn->close();
                     <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${dueDateClass}">
                         <i class="fas fa-clock mr-1"></i>
                         Due: ${dueDate.toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        })}
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })}
                     </span>
                 `;
             }
@@ -1128,12 +1144,12 @@ $conn->close();
                                         <i class="fas fa-check-circle text-green-500 mr-2"></i>
                                         <span class="text-sm font-medium text-green-800">
                                             Submitted on ${new Date(post.submission.submitted_at).toLocaleDateString('en-US', {
-                                                year: 'numeric',
-                                                month: 'short',
-                                                day: 'numeric',
-                                                hour: '2-digit',
-                                                minute: '2-digit'
-                                            })}
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })}
                                         </span>
                                     </div>
                                     ${post.submission.grade ? `
@@ -1194,12 +1210,12 @@ $conn->close();
                                 </div>
                                 <div class="text-xs text-gray-500 mt-1">
                                     ${new Date(comment.commented_at).toLocaleDateString('en-US', {
-                                        year: 'numeric',
-                                        month: 'short',
-                                        day: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    })}
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })}
                                 </div>
                             </div>
                         </div>
@@ -1223,12 +1239,12 @@ $conn->close();
                             <p class="mt-1 text-sm text-gray-500">
                                 Posted by ${escapeHtml(post.faculty_name)}
                                 on ${new Date(post.posted_at).toLocaleDateString('en-US', {
-                                    year: 'numeric',
-                                    month: 'short',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                })}
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            })}
                             </p>
                         </div>
                         ${post.faculty_empid === '<?php echo $auth["id"]; ?>' ? `
@@ -1361,7 +1377,7 @@ $conn->close();
         }
 
         // Initialize when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Attach click handler to load more button
             const loadMoreBtn = document.getElementById('loadMoreBtn');
             if (loadMoreBtn) {
@@ -1870,7 +1886,7 @@ $conn->close();
                 enrolledArrow.classList.toggle('rotate-180');
             });
         }
-         document.getElementById('user-icon').addEventListener('click', function (e) {
+        document.getElementById('user-icon').addEventListener('click', function (e) {
             e.stopPropagation();
             document.getElementById('user-dropdown').classList.toggle('hidden');
         });

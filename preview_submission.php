@@ -5,7 +5,7 @@ $auth = verifySession();
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if (!$id) die("Invalid submission ID.");
 
-$conn = new mysqli("localhost", "root", "", "college_ipm_system");
+$conn = new mysqli("localhost", "root", "", "college_ipm_system", $port=3307);
 $stmt = $conn->prepare("SELECT submission_file_name, submission_file_type, submission_file_data FROM classops_submissions WHERE submission_id = ?");
 $stmt->bind_param("i", $id);
 $stmt->execute();
