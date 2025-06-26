@@ -177,11 +177,11 @@ if (isset($_GET['ajax'])) {
 
     echo json_encode([
         'posts' => $posts,
-        'hasMore' => ($offset + count($posts)) < $totalPosts,
+        'hasMore' => ($offset + $posts_per_page) < $totalPosts,
         'totalPosts' => $totalPosts,
         'currentPage' => $page
     ]);
-    exit;
+    exit();
 }
 
 // For initial page load, get first page of posts
@@ -326,7 +326,7 @@ $conn->close();
 
         #loadMoreBtn {
             transition: all 0.2s ease;
-            min-width: 60px;
+            min-width: 180px;
         }
 
         #loadMoreBtn:hover {
@@ -406,19 +406,8 @@ $conn->close();
             top: 56px;
             left: 16rem;
             right: 0;
-            z-index: 50;
-            /* Lower than header and dropdown */
+            z-index: 40;
             transition: 0.6s ease-in-out left;
-        }
-
-        header {
-            z-index: 100;
-            /* Higher than class header */
-        }
-
-        #user-dropdown {
-            z-index: 120;
-            /* Highest of all */
         }
 
         /* When sidebar is collapsed */
@@ -433,9 +422,9 @@ $conn->close();
     </style>
 </head>
 
-<body class="bg-gradient-to-br from-blue-100 to-indigo-400 min-h-screen overflow-x-hidden">
+<body class="bg-[#a2a8d3] min-h-screen overflow-x-hidden">
     <!-- Header -->
-    <header class="flex items-center justify-between px-4 py-2 border-b border-gray-300 bg-white h-14 z-[100]">
+    <header class="flex items-center justify-between px-4 py-2 border-b border-gray-300 bg-white h-14">
         <div class="flex items-center space-x-2">
             <button aria-label="Menu" class="p-2 focus:outline-none" id="menuToggle">
                 <i class="fas fa-bars text-gray-700 text-xl"></i>
@@ -446,8 +435,8 @@ $conn->close();
                 <span class="text-gray-800 text-lg select-none">ClassOps</span>
             </a>
         </div>
-        <div class="flex items-center space-x-6">
-            <div class="relative z-[110]">
+        <div class="flex items-center space-x-6 z-[100]">
+            <div class="relative">
                 <button aria-label="User" class="text-gray-700 text-2xl font-light leading-none focus:outline-none">
                     <i class="fas fa-user text-xl text-gray-600 px-2 py-2 hover:bg-gray-100 rounded-lg focus:outline-none"
                         id="user-icon"></i>
@@ -463,8 +452,7 @@ $conn->close();
                     </div>
                     <div class="border-t border-gray-200"></div>
                     <a href="login.php"
-                        class="block px-4 py-2 text-sm text-center text-gray-700 hover:bg-green-500 hover:text-white">Sign
-                        out</a>
+                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-500 hover:text-white">Sign out</a>
                 </div>
             </div>
         </div>
@@ -514,7 +502,7 @@ $conn->close();
     </aside>
 
     <!-- Class Header -->
-    <div class="class_head bg-[#e8f0fe] shadow-sm z-50">
+    <div class=" class_head bg-[#e8f0fe] shadow-sm">
         <div class="max-w-6xl mx-auto px-4 py-3 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between">
                 <div class="flex-1 min-w-0">
@@ -539,9 +527,9 @@ $conn->close();
                     </div>
                 </div>
                 <?php if ($isFaculty): ?>
-                    <div class="mt-4 mr-32 flex md:mt-0 md:ml-4">
+                    <div class="mt-4 flex md:mt-0 md:ml-4">
                         <button type="button" onclick="openModal('createPostModal')"
-                            class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-500 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             <i class="fas fa-plus mr-2"></i> Create Post
                         </button>
                     </div>
@@ -730,9 +718,10 @@ $conn->close();
                                 <?php endif; ?>
 
                                 <!-- Comments Section -->
-                                <!-- Comment Form -->
                                 <div class="mt-4 border-t border-gray-200 pt-4">
                                     <h3 class="text-sm font-medium text-gray-500 mb-2">Comments</h3>
+
+                                    <!-- Comment Form -->
                                     <div class="mb-4">
                                         <form class="comment-form" data-post-id="<?php echo $post['post_id']; ?>">
                                             <div class="flex items-start space-x-2">
@@ -742,20 +731,15 @@ $conn->close();
                                                         <?php echo strtoupper(substr($auth['name'], 0, 1)); ?>
                                                     </div>
                                                 </div>
-                                                <div class="relative flex-1 min-w-0">
+                                                <div class="flex-1 min-w-0">
                                                     <textarea name="comment_text" rows="1"
-                                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:border-blue-400 resize-none"
-                                                        placeholder="Add class comment"></textarea>
-                                                    <button type="submit"
-                                                        class="absolute right-2 bottom-2 p-3 text-blue-600 hover:text-blue-700 focus:outline-none">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path fill-rule="evenodd"
-                                                                d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
-                                                                clip-rule="evenodd" />
-                                                        </svg>
-                                                    </button>
+                                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:border-blue-400 resize-none"
+                                                        placeholder="Add a comment..."></textarea>
                                                 </div>
+                                                <button type="submit"
+                                                    class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                                                    Post
+                                                </button>
                                             </div>
                                         </form>
                                     </div>
@@ -792,11 +776,10 @@ $conn->close();
                     <?php endforeach; ?>
                     <?php if (count($posts) >= $posts_per_page): ?>
                         <div id="loadMoreContainer" class="text-center mt-6">
-                            <div id="loadMoreBtn"
-                                class="inline-flex items-center justify-center p-2 text-xl rounded-full bg-green-500 text-white hover:bg-green-700 cursor-pointer">
-                                <i id="loadMoreIcon" class="fas fa-arrow-down"></i>
-                                <span id="loadMoreSpinner" class="hidden btn-spinner ml-2"></span>
-                            </div>
+                            <button id="loadMoreBtn" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                <span id="loadMoreText">Load More Posts</span>
+                                <span id="loadMoreSpinner" class="hidden btn-spinner"></span>
+                            </button>
                         </div>
                     <?php endif; ?>
                 <?php endif; ?>
@@ -917,6 +900,7 @@ $conn->close();
                 <form id="editPostForm">
                     <input type="hidden" name="action" value="update">
                     <input type="hidden" name="post_id" id="editPostId">
+                    <input type="hidden" name="class_id" value="<?php echo $classId; ?>">
 
                     <div class="space-y-4">
                         <div>
@@ -1074,15 +1058,6 @@ $conn->close();
         let isLoading = false;
         let hasMorePosts = true;
 
-        document.getElementById('user-icon').addEventListener('click', function (e) {
-            e.stopPropagation();
-            document.getElementById('user-dropdown').classList.toggle('hidden');
-        });
-
-        document.addEventListener('click', function () {
-            document.getElementById('user-dropdown').classList.add('hidden');
-        });
-
         // Generate HTML for a single post
         function generatePostHtml(post) {
             // Format due date if assignment
@@ -1094,37 +1069,37 @@ $conn->close();
                 const dueDateClass = isOverdue ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800';
 
                 dueDateHtml = `
-                <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${dueDateClass}">
-                    <i class="fas fa-clock mr-1"></i>
-                    Due: ${dueDate.toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                })}
-                </span>
-            `;
+                    <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${dueDateClass}">
+                        <i class="fas fa-clock mr-1"></i>
+                        Due: ${dueDate.toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })}
+                    </span>
+                `;
             }
 
             // Generate files HTML if any
             let filesHtml = '';
             if (post.files && post.files.length > 0) {
                 filesHtml = `
-                <div class="mt-4 border-t border-gray-200 pt-4">
-                    <h3 class="text-sm font-medium text-gray-500 mb-2">Attachments</h3>
-                    <ul class="space-y-2">
-                        ${post.files.map(file => `
-                            <li class="file-item">
-                                <a href="download_file.php?file_id=${file.file_id}" class="flex items-center p-2 rounded hover:bg-gray-50">
-                                    <i class="fas ${getFileIconClass(file.file_type)} mr-2 text-gray-500"></i>
-                                    <span class="text-sm text-gray-700 truncate">${escapeHtml(file.file_name)}</span>
-                                </a>
-                            </li>
-                        `).join('')}
-                    </ul>
-                </div>
-            `;
+                    <div class="mt-4 border-t border-gray-200 pt-4">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Attachments</h3>
+                        <ul class="space-y-2">
+                            ${post.files.map(file => `
+                                <li class="file-item">
+                                    <a href="download_file.php?file_id=${file.file_id}" class="flex items-center p-2 rounded hover:bg-gray-50">
+                                        <i class="fas ${getFileIconClass(file.file_type)} mr-2 text-gray-500"></i>
+                                        <span class="text-sm text-gray-700 truncate">${escapeHtml(file.file_name)}</span>
+                                    </a>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
             }
 
             // Generate assignment info if assignment
@@ -1132,70 +1107,70 @@ $conn->close();
             if (post.post_type === 'assignment') {
                 if (<?php echo $isFaculty ? 'true' : 'false'; ?>) {
                     assignmentHtml = `
-                    <div class="mt-4 border-t border-gray-200 pt-4">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-sm font-medium text-gray-500">
-                                Submissions: ${post.submission_count || 0}
-                            </h3>
-                            <a href="assignment_submissions.php?post_id=${post.post_id}" class="text-sm font-medium text-blue-600 hover:text-blue-500">
-                                View all
-                            </a>
+                        <div class="mt-4 border-t border-gray-200 pt-4">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-sm font-medium text-gray-500">
+                                    Submissions: ${post.submission_count || 0}
+                                </h3>
+                                <a href="assignment_submissions.php?post_id=${post.post_id}" class="text-sm font-medium text-blue-600 hover:text-blue-500">
+                                    View all
+                                </a>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
                 } else {
                     if (post.submission) {
                         assignmentHtml = `
-                        <div class="mt-4 border-t border-gray-200 pt-4">
-                            <h3 class="text-sm font-medium text-gray-500 mb-2">Your Work</h3>
-                            <div class="bg-green-50 border border-green-200 rounded-md p-3">
-                                <div class="flex items-center">
-                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                                    <span class="text-sm font-medium text-green-800">
-                                        Submitted on ${new Date(post.submission.submitted_at).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        })}
-                                    </span>
+                            <div class="mt-4 border-t border-gray-200 pt-4">
+                                <h3 class="text-sm font-medium text-gray-500 mb-2">Your Work</h3>
+                                <div class="bg-green-50 border border-green-200 rounded-md p-3">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                        <span class="text-sm font-medium text-green-800">
+                                            Submitted on ${new Date(post.submission.submitted_at).toLocaleDateString('en-US', {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </span>
+                                    </div>
+                                    ${post.submission.grade ? `
+                                        <div class="mt-2 flex items-center">
+                                            <span class="text-sm font-medium text-gray-700 mr-2">Grade:</span>
+                                            <span class="text-sm font-medium text-gray-900">${escapeHtml(post.submission.grade)}</span>
+                                        </div>
+                                    ` : ''}
+                                    ${post.submission.remarks ? `
+                                        <div class="mt-2">
+                                            <span class="text-sm font-medium text-gray-700">Feedback:</span>
+                                            <p class="text-sm text-gray-900 mt-1">
+                                                ${escapeHtml(post.submission.remarks).replace(/\n/g, '<br>')}
+                                            </p>
+                                        </div>
+                                    ` : ''}
+                                    <button onclick="openSubmissionModal(${post.post_id}, true)" class="mt-3 text-sm font-medium text-blue-600 hover:text-blue-500">
+                                        Edit submission
+                                    </button>
                                 </div>
-                                ${post.submission.grade ? `
-                                    <div class="mt-2 flex items-center">
-                                        <span class="text-sm font-medium text-gray-700 mr-2">Grade:</span>
-                                        <span class="text-sm font-medium text-gray-900">${escapeHtml(post.submission.grade)}</span>
-                                    </div>
-                                ` : ''}
-                                ${post.submission.remarks ? `
-                                    <div class="mt-2">
-                                        <span class="text-sm font-medium text-gray-700">Feedback:</span>
-                                        <p class="text-sm text-gray-900 mt-1">
-                                            ${escapeHtml(post.submission.remarks).replace(/\n/g, '<br>')}
-                                        </p>
-                                    </div>
-                                ` : ''}
-                                <button onclick="openSubmissionModal(${post.post_id}, true)" class="mt-3 text-sm font-medium text-blue-600 hover:text-blue-500">
-                                    Edit submission
-                                </button>
                             </div>
-                        </div>
-                    `;
+                        `;
                     } else {
                         assignmentHtml = `
-                        <div class="mt-4 border-t border-gray-200 pt-4">
-                            <h3 class="text-sm font-medium text-gray-500 mb-2">Your Work</h3>
-                            <div class="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-                                <p class="text-sm text-yellow-800">
-                                    <i class="fas fa-exclamation-circle mr-1"></i>
-                                    You haven't submitted this assignment yet
-                                </p>
-                                <button onclick="openSubmissionModal(${post.post_id}, false)" class="mt-2 inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none">
-                                    Submit Assignment
-                                </button>
+                            <div class="mt-4 border-t border-gray-200 pt-4">
+                                <h3 class="text-sm font-medium text-gray-500 mb-2">Your Work</h3>
+                                <div class="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                                    <p class="text-sm text-yellow-800">
+                                        <i class="fas fa-exclamation-circle mr-1"></i>
+                                        You haven't submitted this assignment yet
+                                    </p>
+                                    <button onclick="openSubmissionModal(${post.post_id}, false)" class="mt-2 inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none">
+                                        Submit Assignment
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    `;
+                        `;
                     }
                 }
             }
@@ -1203,116 +1178,110 @@ $conn->close();
             // Generate comments HTML
             const commentsHtml = post.comments && post.comments.length > 0 ?
                 post.comments.map(comment => `
-                <div class="flex space-x-2">
-                    <div class="flex-shrink-0">
-                        <div class="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium">
-                            ${comment.commenter_name ? comment.commenter_name.charAt(0).toUpperCase() : '?'}
-                        </div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="bg-gray-50 rounded-lg p-3">
-                            <div class="text-sm font-medium text-gray-900">
-                                ${escapeHtml(comment.commenter_name || 'Unknown')}
-                            </div>
-                            <div class="text-sm text-gray-700 mt-1">
-                                ${escapeHtml(comment.comment_text).replace(/\n/g, '<br>')}
-                            </div>
-                            <div class="text-xs text-gray-500 mt-1">
-                                ${new Date(comment.commented_at).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                })}
+                    <div class="flex space-x-2">
+                        <div class="flex-shrink-0">
+                            <div class="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium">
+                                ${comment.commenter_name ? comment.commenter_name.charAt(0).toUpperCase() : '?'}
                             </div>
                         </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <div class="text-sm font-medium text-gray-900">
+                                    ${escapeHtml(comment.commenter_name || 'Unknown')}
+                                </div>
+                                <div class="text-sm text-gray-700 mt-1">
+                                    ${escapeHtml(comment.comment_text).replace(/\n/g, '<br>')}
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    ${new Date(comment.commented_at).toLocaleDateString('en-US', {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    })}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            `).join('') : '';
+                `).join('') : '';
 
             return `
-            <div class="bg-white rounded-lg shadow-sm post-card overflow-hidden">
-                <!-- Post Header -->
-                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-start">
-                    <div>
-                        <div class="flex items-center">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPostTypeClass(post.post_type)}">
-                                ${post.post_type.charAt(0).toUpperCase() + post.post_type.slice(1)}
-                            </span>
-                            ${post.post_type === 'assignment' && post.due_date ? `
-                            <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isOverdue ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}">
-                                <i class="fas fa-clock mr-1"></i>
-                                Due: ${post.due_date}
-                            </span>
-                            ` : ''}
+                <div class="bg-white rounded-lg shadow-sm post-card overflow-hidden">
+                    <!-- Post Header -->
+                    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPostTypeClass(post.post_type)}">
+                                    ${post.post_type.charAt(0).toUpperCase() + post.post_type.slice(1)}
+                                </span>
+                                ${dueDateHtml}
+                            </div>
+                            <h2 class="mt-1 text-lg font-medium text-gray-900">
+                                ${escapeHtml(post.title)}
+                            </h2>
+                            <p class="mt-1 text-sm text-gray-500">
+                                Posted by ${escapeHtml(post.faculty_name)}
+                                on ${new Date(post.posted_at).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                })}
+                            </p>
                         </div>
-                        <h2 class="mt-1 text-lg font-medium text-gray-900">
-                            ${escapeHtml(post.title)}
-                        </h2>
-                        <p class="mt-1 text-sm text-gray-500">
-                            Posted by ${escapeHtml(post.faculty_name)}
-                            on ${new Date(post.posted_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            })}
-                        </p>
+                        ${post.faculty_empid === '<?php echo $auth["id"]; ?>' ? `
+                        <div class="relative">
+                            <button onclick="togglePostMenu(this, ${post.post_id})" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <div id="postMenu${post.post_id}" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                                <div class="py-1">
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onclick="editPost(${post.post_id})">
+                                        Edit
+                                    </a>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onclick="return confirm('Are you sure? This will permanently delete this post!') && deletePost(${post.post_id})">
+                                        Delete
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
                     </div>
-                    ${post.faculty_empid === '<?php echo $auth["id"]; ?>' ? `
-                    <div class="relative">
-                        <button onclick="togglePostMenu(this, ${post.post_id})" class="text-gray-500 hover:text-gray-700 focus:outline-none">
-                            <i class="fas fa-ellipsis-v"></i>
-                        </button>
-                        <div id="postMenu${post.post_id}" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200">
-                            <div class="py-1">
-                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onclick="editPost(${post.post_id})">
-                                    Edit
-                                </a>
-                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onclick="return confirm('Are you sure? This will permanently delete this post!') && deletePost(${post.post_id})">
-                                    Delete
-                                </a>
+
+                    <div class="px-6 py-4">
+                        <div class="prose max-w-none">
+                            ${escapeHtml(post.content).replace(/\n/g, '<br>')}
+                        </div>
+                        ${filesHtml}
+                        ${assignmentHtml}
+                        <div class="mt-4 border-t border-gray-200 pt-4">
+                            <h3 class="text-sm font-medium text-gray-500 mb-2">Comments</h3>
+                            <div class="mb-4">
+                                <form class="comment-form" data-post-id="${post.post_id}">
+                                    <div class="flex items-start space-x-2">
+                                        <div class="flex-shrink-0">
+                                            <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
+                                                ${'<?php echo strtoupper(substr($auth["name"], 0, 1)); ?>'}
+                                            </div>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <textarea name="comment_text" rows="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:border-blue-400 resize-none" placeholder="Add a comment..."></textarea>
+                                        </div>
+                                        <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                                            Post
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="space-y-3" id="comments-${post.post_id}">
+                                ${commentsHtml}
                             </div>
                         </div>
                     </div>
-                    ` : ''}
                 </div>
-
-                <div class="px-6 py-4">
-                    <div class="prose max-w-none">
-                        ${escapeHtml(post.content).replace(/\n/g, '<br>')}
-                    </div>
-                    ${filesHtml}
-                    ${assignmentHtml}
-                    <div class="mt-4 border-t border-gray-200 pt-4">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">Comments</h3>
-                        <div class="mb-4">
-                            <form class="comment-form" data-post-id="${post.post_id}">
-                                <div class="flex items-start space-x-2">
-                                    <div class="flex-shrink-0">
-                                        <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
-                                            ${'<?php echo strtoupper(substr($auth["name"], 0, 1)); ?>'}
-                                        </div>
-                                    </div>
-                                    <div class="relative flex-1 min-w-0">
-                    <textarea name="comment_text" rows="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:border-blue-400 resize-none" placeholder="Add class comment"></textarea>
-                    <button type="submit" class="absolute right-2 bottom-2 p-1 text-blue-600 hover:text-blue-700 focus:outline-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
-                </div>
-                            </form>
-                        </div>
-                        <div class="space-y-3" id="comments-${post.post_id}">
-                            ${commentsHtml}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
+            `;
         }
 
         // Helper functions
@@ -1354,86 +1323,60 @@ $conn->close();
             if (isLoading || !hasMorePosts) return;
 
             isLoading = true;
-            const loadMoreIcon = document.getElementById('loadMoreIcon');
-            const loadMoreSpinner = document.getElementById('loadMoreSpinner');
-
-            if (loadMoreIcon) loadMoreIcon.classList.add('hidden');
-            if (loadMoreSpinner) loadMoreSpinner.classList.remove('hidden');
+            document.getElementById('loadMoreText').textContent = 'Loading...';
+            document.getElementById('loadMoreSpinner').classList.remove('hidden');
 
             try {
                 currentPage++;
                 const response = await fetch(`class_view.php?id=<?php echo $classId; ?>&page=${currentPage}&ajax=1`);
-
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-
                 const data = await response.json();
 
                 if (data.posts && data.posts.length > 0) {
                     const postsContainer = document.getElementById('postsContainer');
-                    const loadMoreContainer = document.getElementById('loadMoreContainer');
+                    data.posts.forEach(post => {
+                        const postHtml = generatePostHtml(post);
+                        postsContainer.insertAdjacentHTML('beforeend', postHtml);
+                    });
 
-                    if (postsContainer && loadMoreContainer) {
-                        data.posts.forEach(post => {
-                            const postHtml = generatePostHtml(post);
-                            postsContainer.insertBefore(
-                                document.createRange().createContextualFragment(postHtml),
-                                loadMoreContainer
-                            );
-                        });
-                    }
-
+                    // Update hasMorePosts based on server response
                     hasMorePosts = data.hasMore;
 
-                    if (!hasMorePosts && loadMoreContainer) {
-                        loadMoreContainer.remove();
+                    // Hide button if no more posts
+                    if (!hasMorePosts) {
+                        document.getElementById('loadMoreContainer').remove();
                     }
                 } else {
                     hasMorePosts = false;
-                    const loadMoreContainer = document.getElementById('loadMoreContainer');
-                    if (loadMoreContainer) loadMoreContainer.remove();
+                    document.getElementById('loadMoreContainer').remove();
                 }
             } catch (error) {
                 console.error('Error loading more posts:', error);
+                document.getElementById('loadMoreText').textContent = 'Error - Click to Retry';
                 currentPage--; // Retry same page on error
-                const loadMoreIcon = document.getElementById('loadMoreIcon');
-                if (loadMoreIcon) {
-                    loadMoreIcon.classList.remove('fa-arrow-down');
-                    loadMoreIcon.classList.add('fa-exclamation-circle');
-                    loadMoreIcon.classList.remove('hidden');
-                }
             } finally {
                 isLoading = false;
-                const loadMoreIcon = document.getElementById('loadMoreIcon');
-                if (loadMoreIcon) {
-                    loadMoreIcon.classList.add('fa-arrow-down');
-                    loadMoreIcon.classList.remove('fa-exclamation-circle');
-                    loadMoreIcon.classList.remove('hidden');
-                }
-                const loadMoreSpinner = document.getElementById('loadMoreSpinner');
-                if (loadMoreSpinner) loadMoreSpinner.classList.add('hidden');
+                document.getElementById('loadMoreText').textContent = 'Load More Posts';
+                document.getElementById('loadMoreSpinner').classList.add('hidden');
             }
         }
 
         // Initialize when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             // Attach click handler to load more button
             const loadMoreBtn = document.getElementById('loadMoreBtn');
             if (loadMoreBtn) {
                 loadMoreBtn.addEventListener('click', loadMorePosts);
             }
 
-            // Also implement infinite scroll as fallback
+            // Also implement infinite scroll
             window.addEventListener('scroll', () => {
-                if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500 && !isLoading && hasMorePosts) {
+                if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 1000) {
                     loadMorePosts();
                 }
             });
         });
 
-
-        // Create post form submission - fixed to prevent duplicate file uploads
+        // Create post form submission
         document.getElementById('createPostForm')?.addEventListener('submit', async function (e) {
             e.preventDefault();
             const form = e.target;
@@ -1446,13 +1389,6 @@ $conn->close();
                 submitBtn.disabled = true;
                 btnText.textContent = 'Creating...';
                 spinner.classList.remove('hidden');
-
-                // Check if any files were selected
-                const fileInput = document.getElementById('file-upload');
-                if (fileInput.files.length === 0) {
-                    // Remove the files entry from formData if no files selected
-                    formData.delete('files[]');
-                }
 
                 const response = await fetch('classops_posts.php', {
                     method: 'POST',
@@ -1542,10 +1478,10 @@ $conn->close();
                 const fileItem = document.createElement('div');
                 fileItem.className = 'flex items-center p-2 bg-gray-50 rounded';
                 fileItem.innerHTML = `
-                <i class="fas fa-file mr-2 text-gray-500"></i>
-                <span class="text-sm text-gray-700 truncate flex-1">${file.name}</span>
-                <span class="text-xs text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
-            `;
+                    <i class="fas fa-file mr-2 text-gray-500"></i>
+                    <span class="text-sm text-gray-700 truncate flex-1">${file.name}</span>
+                    <span class="text-xs text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                `;
                 fileList.appendChild(fileItem);
             });
 
@@ -1564,10 +1500,10 @@ $conn->close();
                 const fileItem = document.createElement('div');
                 fileItem.className = 'flex items-center p-2 bg-gray-50 rounded';
                 fileItem.innerHTML = `
-                <i class="fas fa-file mr-2 text-gray-500"></i>
-                <span class="text-sm text-gray-700 truncate flex-1">${file.name}</span>
-                <span class="text-xs text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
-            `;
+                    <i class="fas fa-file mr-2 text-gray-500"></i>
+                    <span class="text-sm text-gray-700 truncate flex-1">${file.name}</span>
+                    <span class="text-xs text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                `;
                 fileList.appendChild(fileItem);
             });
         });
@@ -1613,14 +1549,14 @@ $conn->close();
                     const fileItem = document.createElement('div');
                     fileItem.className = 'flex items-center justify-between p-2 bg-gray-50 rounded';
                     fileItem.innerHTML = `
-                    <div class="flex items-center flex-1 min-w-0">
-                        <i class="fas fa-file mr-2 text-gray-500"></i>
-                        <span class="text-sm text-gray-700 truncate">${file.file_name}</span>
-                    </div>
-                    <button type="button" onclick="deleteFile(${file.file_id}, ${postId})" class="text-red-500 hover:text-red-700 ml-2">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                `;
+                        <div class="flex items-center flex-1 min-w-0">
+                            <i class="fas fa-file mr-2 text-gray-500"></i>
+                            <span class="text-sm text-gray-700 truncate">${file.file_name}</span>
+                        </div>
+                        <button type="button" onclick="deleteFile(${file.file_id}, ${postId})" class="text-red-500 hover:text-red-700 ml-2">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    `;
                     fileList.appendChild(fileItem);
                 });
 
@@ -1642,19 +1578,17 @@ $conn->close();
                     btnText.textContent = 'Updating...';
                     spinner.classList.remove('hidden');
 
-                    // Add class_id to the form data
-                    const classId = <?php echo $classId; ?>;
-                    formData.append('class_id', classId);
-
-                    // Ensure all required fields are present
-                    if (!formData.get('post_id') || !formData.get('title') || !formData.get('post_type')) {
-                        throw new Error('Missing required fields');
-                    }
-
                     const response = await fetch('classops_posts.php', {
                         method: 'POST',
                         body: formData
                     });
+
+                    // First check if response is JSON
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        const text = await response.text();
+                        throw new Error(`Server returned: ${text.substring(0, 100)}...`);
+                    }
 
                     const data = await response.json();
 
@@ -1725,54 +1659,60 @@ $conn->close();
 
             // Delete post with better UX and error handling
             async function deletePost(postId) {
-                try {
-                    console.log('[DELETE] Starting deletion for post:', postId);
+                if (!confirm('Are you sure you want to permanently delete this post and all its attachments?')) return;
 
-                    // Validate post ID
-                    postId = parseInt(postId);
-                    if (isNaN(postId) || postId <= 0) {
-                        throw new Error('Invalid post ID');
+                try {
+                    // Show loading state
+                    const deleteButton = document.querySelector(`[onclick*="deletePost(${postId})"]`);
+                    const originalText = deleteButton?.innerHTML;
+                    if (deleteButton) {
+                        deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+                        deleteButton.disabled = true;
                     }
 
-                    if (!confirm('Permanently delete this post?')) return;
-
-                    // Create URLSearchParams
-                    const params = new URLSearchParams();
-                    params.append('action', 'delete');
-                    params.append('post_id', postId);
-                    params.append('class_id', <?php echo (int) $classId; ?>);
-                    params.append('faculty_empid', '<?php echo $auth['id']; ?>');
-
-                    console.log('[DELETE] Sending:', params.toString());
+                    const formData = new FormData();
+                    formData.append('action', 'delete');
+                    formData.append('post_id', postId);
+                    formData.append('class_id', <?php echo $classId; ?>);
 
                     const response = await fetch('classops_posts.php', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: params
+                        body: formData
                     });
 
+                    const data = await response.json();
+
                     if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                        throw new Error(data.error || 'Server returned an error');
                     }
 
-                    const result = await response.json();
-                    console.log('[DELETE] Response:', result);
-
-                    if (!result.success) {
-                        throw new Error(result.error || 'Delete failed');
+                    if (data.success) {
+                        // Visual feedback before reload
+                        const postElement = document.querySelector(`.post-card[data-post-id="${postId}"]`);
+                        if (postElement) {
+                            postElement.style.transition = 'opacity 0.5s';
+                            postElement.style.opacity = '0';
+                            setTimeout(() => {
+                                location.reload();
+                            }, 500);
+                        } else {
+                            location.reload();
+                        }
+                    } else {
+                        throw new Error(data.error || 'Failed to delete post');
                     }
-
-                    // Visual feedback
-                    document.querySelector(`.post-card[data-post-id="${postId}"]`)?.remove();
-
                 } catch (error) {
-                    console.error('[DELETE] Error:', error);
-                    alert(`Delete failed: ${error.message}`);
+                    console.error('Delete post error:', error);
+                    alert(`Error deleting post: ${error.message}`);
+
+                    // Reset button state
+                    const deleteButton = document.querySelector(`[onclick*="deletePost(${postId})"]`);
+                    if (deleteButton) {
+                        deleteButton.innerHTML = originalText || 'Delete';
+                        deleteButton.disabled = false;
+                    }
                 }
             }
-
         <?php endif; ?>
 
         <?php if ($isStudent): ?>
@@ -1873,27 +1813,27 @@ $conn->close();
                         });
 
                         const commentHtml = `
-                        <div class="flex space-x-2">
-                            <div class="flex-shrink-0">
-                                <div class="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium">
-                                    ${'<?php echo strtoupper(substr($auth["name"], 0, 1)); ?>'}
-                                </div>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="bg-gray-50 rounded-lg p-3">
-                                    <div class="text-sm font-medium text-gray-900">
-                                        ${'<?php echo htmlspecialchars($auth["name"]); ?>'}
-                                    </div>
-                                    <div class="text-sm text-gray-700 mt-1">
-                                        ${commentText.replace(/\n/g, '<br>')}
-                                    </div>
-                                    <div class="text-xs text-gray-500 mt-1">
-                                        ${formattedDate}
+                            <div class="flex space-x-2">
+                                <div class="flex-shrink-0">
+                                    <div class="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium">
+                                        ${'<?php echo strtoupper(substr($auth["name"], 0, 1)); ?>'}
                                     </div>
                                 </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="bg-gray-50 rounded-lg p-3">
+                                        <div class="text-sm font-medium text-gray-900">
+                                            ${'<?php echo htmlspecialchars($auth["name"]); ?>'}
+                                        </div>
+                                        <div class="text-sm text-gray-700 mt-1">
+                                            ${commentText.replace(/\n/g, '<br>')}
+                                        </div>
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            ${formattedDate}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    `;
+                        `;
 
                         commentsContainer.insertAdjacentHTML('afterbegin', commentHtml);
                         textarea.value = '';
@@ -1930,6 +1870,14 @@ $conn->close();
                 enrolledArrow.classList.toggle('rotate-180');
             });
         }
+         document.getElementById('user-icon').addEventListener('click', function (e) {
+            e.stopPropagation();
+            document.getElementById('user-dropdown').classList.toggle('hidden');
+        });
+
+        document.addEventListener('click', function () {
+            document.getElementById('user-dropdown').classList.add('hidden');
+        });
     </script>
 </body>
 

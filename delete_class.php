@@ -48,29 +48,27 @@ try {
     $conn->begin_transaction();
 
     try {
-        // Delete all submissions and related data
-        $conn->query("DELETE cs FROM classops_submissions cs 
-                      JOIN classops_posts cp ON cs.post_id = cp.post_id 
-                      WHERE cp.class_id = $classId");
+        // Prepare all statements
+        $queries = [
+            "DELETE cs FROM classops_submissions cs JOIN classops_posts cp ON cs.post_id = cp.post_id WHERE cp.class_id = ?",
+            "DELETE cc FROM classops_comments cc JOIN classops_posts cp ON cc.post_id = cp.post_id WHERE cp.class_id = ?",
+            "DELETE cpf FROM classops_post_files cpf JOIN classops_posts cp ON cpf.post_id = cp.post_id WHERE cp.class_id = ?",
+            "DELETE FROM classops_posts WHERE class_id = ?",
+            "DELETE FROM classops_enrollments WHERE class_id = ?",
+            "DELETE FROM classops_classes WHERE class_id = ?"
+        ];
 
-        // Delete all comments
-        $conn->query("DELETE cc FROM classops_comments cc 
-                      JOIN classops_posts cp ON cc.post_id = cp.post_id 
-                      WHERE cp.class_id = $classId");
-
-        // Delete all post files
-        $conn->query("DELETE cpf FROM classops_post_files cpf 
-                      JOIN classops_posts cp ON cpf.post_id = cp.post_id 
-                      WHERE cp.class_id = $classId");
-
-        // Delete all posts
-        $conn->query("DELETE FROM classops_posts WHERE class_id = $classId");
-
-        // Delete all enrollments
-        $conn->query("DELETE FROM classops_enrollments WHERE class_id = $classId");
-
-        // Finally delete the class
-        $conn->query("DELETE FROM classops_classes WHERE class_id = $classId");
+        foreach ($queries as $query) {
+            $stmt = $conn->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Database error preparing statement: " . $conn->error);
+            }
+            $stmt->bind_param("i", $classId);
+            if (!$stmt->execute()) {
+                throw new Exception("Database error executing query: " . $stmt->error);
+            }
+            $stmt->close();
+        }
 
         $conn->commit();
         $response["success"] = true;

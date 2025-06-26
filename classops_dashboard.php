@@ -215,9 +215,9 @@ $userClasses = $enrolledClasses;
                     <i id="enrolledArrow" class="fas fa-chevron-down text-xs text-gray-600"></i>
                 </button>
                 <div id="enrolledMenu" class="ml-8 mt-1 space-y-1 hidden">
-                    <?php foreach ($userClasses as $class): ?>
-                        <a href="class_view.php?id=<?php echo $class['class_id']; ?>"
-                            class="block px-2 py-1 rounded hover:[#e8f0fe] text-sm"><?php echo htmlspecialchars($class['title']); ?></a>
+                    <?php foreach ($userClasses as $c): ?>
+                        <a href="class_view.php?id=<?php echo $c['class_id']; ?>"
+                            class="block px-2 py-1 rounded hover:bg-[#e8f0fe] text-sm"><?php echo htmlspecialchars($c['title']); ?></a>
                     <?php endforeach; ?>
                 </div>
             </div>

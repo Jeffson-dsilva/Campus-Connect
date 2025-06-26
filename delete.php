@@ -10,7 +10,6 @@ $conn = new mysqli($servername, $username, $password, $dbname,$port);
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
-
 $inputData = json_decode(file_get_contents('php://input'), true);
 
 if (isset($inputData['type'])) {

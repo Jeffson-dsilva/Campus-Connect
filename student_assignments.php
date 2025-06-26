@@ -24,6 +24,7 @@ if ($conn->connect_error) {
 }
 
 
+
 // Get enrolled classes for the current user (for sidebar)
 $userClasses = [];
 if ($isStudent) {
@@ -102,28 +103,28 @@ $conn->close();
         body {
             font-family: 'Google Sans', Arial, sans-serif;
         }
-        
+
         .assignment-card {
             transition: all 0.2s ease;
         }
-        
+
         .assignment-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-        
+
         .due-soon {
             border-left: 4px solid #f59e0b;
         }
-        
+
         .overdue {
             border-left: 4px solid #ef4444;
         }
-        
+
         .submitted {
             border-left: 4px solid #10b981;
         }
-        
+
         .btn-spinner {
             display: inline-block;
             width: 16px;
@@ -134,13 +135,13 @@ $conn->close();
             animation: spin 1s ease-in-out infinite;
             margin-right: 8px;
         }
-        
+
         @keyframes spin {
             to {
                 transform: rotate(360deg);
             }
         }
-        
+
         /* Sidebar styles */
         .collapsed .menu-text,
         .collapsed #enrolledArrow {
@@ -223,7 +224,8 @@ $conn->close();
                         </p>
                     </div>
                     <div class="border-t border-gray-200"></div>
-                    <a href="login.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-500 hover:text-white">Sign out</a>
+                    <a href="login.php"
+                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-500 hover:text-white">Sign out</a>
                 </div>
             </div>
         </div>
@@ -262,7 +264,7 @@ $conn->close();
                 <span class="menu-text">Assignments</span>
             </a>
 
-            
+
 
             <!-- Campus Connect -->
             <a href="<?php echo $isFaculty ? 'ftDashboard.php' : 'stDashboard.php'; ?>"
@@ -275,144 +277,145 @@ $conn->close();
 
 
     <!-- Main Content -->
-     
-    <div id="mainContent" class="transition-all duration-300 bg-gradient-to-br from-blue-100 to-indigo-400">
-    <main class="max-w-6xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        <div class="mb-6">
-            <h1 class="text-2xl font-bold text-gray-900">
-                My Assignments
-            </h1>
-            <p class="text-sm text-gray-900 mt-1">
-                All assignments from your enrolled classes
-            </p>
-        </div>
 
-        <!-- Assignments List -->
-        <div class="space-y-4">
-            <?php if (empty($assignments)): ?>
-                <div class="bg-white rounded-lg shadow-sm p-6 text-center">
-                    <i class="fas fa-tasks text-4xl text-gray-400 mb-3"></i>
-                    <h3 class="text-lg font-medium text-gray-900">No assignments found</h3>
-                    <p class="mt-1 text-sm text-gray-500">
-                        You don't have any assignments in your enrolled classes
-                    </p>
-                </div>
-            <?php else: ?>
-                <?php foreach ($assignments as $assignment): ?>
-                    <?php
-                    // Determine assignment status
-                    $statusClass = '';
-                    $statusText = '';
-                    $dueDate = new DateTime($assignment['due_date']);
-                    $now = new DateTime();
-                    
-                    if ($assignment['submitted_at']) {
-                        $statusClass = 'submitted';
-                        $statusText = 'Submitted';
-                    } elseif ($now > $dueDate) {
-                        $statusClass = 'overdue';
-                        $statusText = 'Overdue';
-                    } elseif ($dueDate->diff($now)->days <= 3) {
-                        $statusClass = 'due-soon';
-                        $statusText = 'Due soon';
-                    } else {
-                        $statusText = 'Pending';
-                    }
-                    ?>
-                    <div class="bg-white rounded-lg shadow-sm assignment-card <?php echo $statusClass; ?>">
-                        <div class="p-6">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <h2 class="text-lg font-medium text-gray-900">
-                                        <?php echo htmlspecialchars($assignment['assignment_title']); ?>
-                                    </h2>
-                                    <p class="text-sm text-gray-500 mt-1">
-                                        Class: <?php echo htmlspecialchars($assignment['class_title']); ?> | 
-                                        Faculty: <?php echo htmlspecialchars($assignment['faculty_name']); ?>
-                                    </p>
-                                    <p class="text-sm text-gray-700 mt-2">
-                                        <?php echo nl2br(htmlspecialchars($assignment['assignment_description'])); ?>
-                                    </p>
-                                </div>
-                                <div class="flex flex-col items-end">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+    <div id="mainContent" class="transition-all duration-300 bg-gradient-to-br from-blue-100 to-indigo-400">
+        <main class="max-w-6xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-gray-900">
+                    My Assignments
+                </h1>
+                <p class="text-sm text-gray-900 mt-1">
+                    All assignments from your enrolled classes
+                </p>
+            </div>
+
+            <!-- Assignments List -->
+            <div class="space-y-4">
+                <?php if (empty($assignments)): ?>
+                    <div class="bg-white rounded-lg shadow-sm p-6 text-center">
+                        <i class="fas fa-tasks text-4xl text-gray-400 mb-3"></i>
+                        <h3 class="text-lg font-medium text-gray-900">No assignments found</h3>
+                        <p class="mt-1 text-sm text-gray-500">
+                            You don't have any assignments in your enrolled classes
+                        </p>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($assignments as $assignment): ?>
+                        <?php
+                        // Determine assignment status
+                        $statusClass = '';
+                        $statusText = '';
+                        $dueDate = new DateTime($assignment['due_date']);
+                        $now = new DateTime();
+
+                        if ($assignment['submitted_at']) {
+                            $statusClass = 'submitted';
+                            $statusText = 'Submitted';
+                        } elseif ($now > $dueDate) {
+                            $statusClass = 'overdue';
+                            $statusText = 'Overdue';
+                        } elseif ($dueDate->diff($now)->days <= 3) {
+                            $statusClass = 'due-soon';
+                            $statusText = 'Due soon';
+                        } else {
+                            $statusText = 'Pending';
+                        }
+                        ?>
+                        <div class="bg-white rounded-lg shadow-sm assignment-card <?php echo $statusClass; ?>">
+                            <div class="p-6">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h2 class="text-lg font-medium text-gray-900">
+                                            <?php echo htmlspecialchars($assignment['assignment_title']); ?>
+                                        </h2>
+                                        <p class="text-sm text-gray-500 mt-1">
+                                            Class: <?php echo htmlspecialchars($assignment['class_title']); ?> |
+                                            Faculty: <?php echo htmlspecialchars($assignment['faculty_name']); ?>
+                                        </p>
+                                        <p class="text-sm text-gray-700 mt-2">
+                                            <?php echo nl2br(htmlspecialchars($assignment['assignment_description'])); ?>
+                                        </p>
+                                    </div>
+                                    <div class="flex flex-col items-end">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
                                         <?php echo $statusClass === 'submitted' ? 'bg-green-100 text-green-800' : ''; ?>
                                         <?php echo $statusClass === 'overdue' ? 'bg-red-100 text-red-800' : ''; ?>
                                         <?php echo $statusClass === 'due-soon' ? 'bg-yellow-100 text-yellow-800' : ''; ?>
                                         <?php echo empty($statusClass) ? 'bg-gray-100 text-gray-800' : ''; ?>">
-                                        <?php echo $statusText; ?>
-                                    </span>
-                                    <p class="text-sm text-gray-500 mt-2">
-                                        Due: <?php echo date('M j, Y g:i A', strtotime($assignment['due_date'])); ?>
-                                    </p>
+                                            <?php echo $statusText; ?>
+                                        </span>
+                                        <p class="text-sm text-gray-500 mt-2">
+                                            Due: <?php echo date('M j, Y g:i A', strtotime($assignment['due_date'])); ?>
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <!-- Submission Status -->
-                            <div class="mt-4 pt-4 border-t border-gray-200">
-                                <?php if ($assignment['submitted_at']): ?>
-                                    <div class="bg-green-50 border border-green-200 rounded-md p-3">
-                                        <div class="flex items-center">
-                                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                                            <span class="text-sm font-medium text-green-800">
-                                                Submitted on <?php echo date('M j, Y g:i A', strtotime($assignment['submitted_at'])); ?>
-                                            </span>
-                                        </div>
-                                        <?php if ($assignment['grade']): ?>
-                                            <div class="mt-2 flex items-center">
-                                                <span class="text-sm font-medium text-gray-700 mr-2">Grade:</span>
-                                                <span class="text-sm font-medium text-gray-900">
-                                                    <?php echo htmlspecialchars($assignment['grade']); ?>
+                                <!-- Submission Status -->
+                                <div class="mt-4 pt-4 border-t border-gray-200">
+                                    <?php if ($assignment['submitted_at']): ?>
+                                        <div class="bg-green-50 border border-green-200 rounded-md p-3">
+                                            <div class="flex items-center">
+                                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                                <span class="text-sm font-medium text-green-800">
+                                                    Submitted on
+                                                    <?php echo date('M j, Y g:i A', strtotime($assignment['submitted_at'])); ?>
                                                 </span>
                                             </div>
-                                        <?php endif; ?>
-                                        <?php if ($assignment['feedback']): ?>
-                                            <div class="mt-2">
-                                                <span class="text-sm font-medium text-gray-700">Feedback:</span>
-                                                <p class="text-sm text-gray-900 mt-1">
-                                                    <?php echo nl2br(htmlspecialchars($assignment['feedback'])); ?>
+                                            <?php if ($assignment['grade']): ?>
+                                                <div class="mt-2 flex items-center">
+                                                    <span class="text-sm font-medium text-gray-700 mr-2">Grade:</span>
+                                                    <span class="text-sm font-medium text-gray-900">
+                                                        <?php echo htmlspecialchars($assignment['grade']); ?>
+                                                    </span>
+                                                </div>
+                                            <?php endif; ?>
+                                            <?php if ($assignment['feedback']): ?>
+                                                <div class="mt-2">
+                                                    <span class="text-sm font-medium text-gray-700">Feedback:</span>
+                                                    <p class="text-sm text-gray-900 mt-1">
+                                                        <?php echo nl2br(htmlspecialchars($assignment['feedback'])); ?>
+                                                    </p>
+                                                </div>
+                                            <?php endif; ?>
+                                            <a href="class_view.php?id=<?php echo $assignment['class_id']; ?>#post-<?php echo $assignment['post_id']; ?>"
+                                                class="mt-3 inline-block text-sm font-medium text-blue-600 hover:text-blue-500">
+                                                View assignment
+                                            </a>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="flex justify-between items-center">
+                                            <div class="bg-yellow-50 border border-yellow-200 rounded-md p-3 flex-1 mr-4">
+                                                <p class="text-sm text-yellow-800">
+                                                    <i class="fas fa-exclamation-circle mr-1"></i>
+                                                    You haven't submitted this assignment yet
                                                 </p>
                                             </div>
-                                        <?php endif; ?>
-                                        <a href="class_view.php?id=<?php echo $assignment['class_id']; ?>#post-<?php echo $assignment['post_id']; ?>"
-                                            class="mt-3 inline-block text-sm font-medium text-blue-600 hover:text-blue-500">
-                                            View assignment
-                                        </a>
-                                    </div>
-                                <?php else: ?>
-                                    <div class="flex justify-between items-center">
-                                        <div class="bg-yellow-50 border border-yellow-200 rounded-md p-3 flex-1 mr-4">
-                                            <p class="text-sm text-yellow-800">
-                                                <i class="fas fa-exclamation-circle mr-1"></i>
-                                                You haven't submitted this assignment yet
-                                            </p>
+                                            <a href="class_view.php?id=<?php echo $assignment['class_id']; ?>#post-<?php echo $assignment['post_id']; ?>"
+                                                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none">
+                                                Submit Assignment
+                                            </a>
                                         </div>
-                                        <a href="class_view.php?id=<?php echo $assignment['class_id']; ?>#post-<?php echo $assignment['post_id']; ?>"
-                                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none">
-                                            Submit Assignment
-                                        </a>
-                                    </div>
-                                <?php endif; ?>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
-    </main>
-</div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </main>
+    </div>
     <script>
         // User dropdown toggle
-        document.getElementById('user-icon').addEventListener('click', function(e) {
+        document.getElementById('user-icon').addEventListener('click', function (e) {
             e.stopPropagation();
             document.getElementById('user-dropdown').classList.toggle('hidden');
         });
 
-        document.addEventListener('click', function() {
+        document.addEventListener('click', function () {
             document.getElementById('user-dropdown').classList.add('hidden');
         });
 
-         // Sidebar toggle functionality
+        // Sidebar toggle functionality
         const sidebar = document.getElementById('sidebar');
         const menuToggle = document.getElementById('menuToggle');
         const enrolledToggle = document.getElementById('enrolledToggle');
