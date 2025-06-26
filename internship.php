@@ -23,44 +23,77 @@ if (!$userName || !$usn) {
   exit();
 }
 
+// Check if student has already submitted internship details
+$checkQuery = "SELECT id FROM internship WHERE usn = ?";
+$checkStmt = $conn->prepare($checkQuery);
+$checkStmt->bind_param("s", $usn);
+$checkStmt->execute();
+$checkStmt->store_result();
+$hasSubmitted = $checkStmt->num_rows > 0;
+$checkStmt->close();
+
 $submitted = false; // Initialize submission flag
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $internName = $conn->real_escape_string($_POST['name']);
-  $usn = $conn->real_escape_string($_POST['usn']);
-  $role = $conn->real_escape_string($_POST['role']);
-  $phone = $conn->real_escape_string($_POST['phone']);
-  $location = $conn->real_escape_string($_POST['location']);
-  $start_date = $conn->real_escape_string($_POST['start-date']);
-  $end_date = $conn->real_escape_string($_POST['end-date']);
-  $languages_used = $conn->real_escape_string($_POST['working-on']);
-
-  $certificate = $_FILES['certificate'];
-  $certificateContent = file_get_contents($certificate['tmp_name']);
-
-  $sql = "INSERT INTO internship (name, usn, role, phone, location, start_date, end_date, languages_used, certificate)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-  $stmt = $conn->prepare($sql);
-  $stmt->bind_param(
-    "sssssssss",
-    $internName,
-    $usn,
-    $role,
-    $phone,
-    $location,
-    $start_date,
-    $end_date,
-    $languages_used,
-    $certificateContent
-  );
-
-  if ($stmt->execute()) {
-    $submitted = true; // Set flag instead of redirecting
+  // If already submitted, prevent resubmission
+  if ($hasSubmitted) {
+    echo "<script>alert('You have already submitted internship details.');</script>";
   } else {
-    echo '<script>alert("Database Error: ' . $conn->error . '");</script>';
-  }
+    try {
+      // Validate and fetch form data
+      $internName = trim($_POST['name']);
+      $usn = trim($_POST['usn']);
+      $role = trim($_POST['role']);
+      $phone = trim($_POST['phone']);
+      $location = trim($_POST['location']);
+      $start_date = trim($_POST['start-date']);
+      $end_date = trim($_POST['end-date']);
+      $languages_used = trim($_POST['working-on']);
 
-  $stmt->close();
+      // Handle file upload
+      $certificateContent = null;
+      if (isset($_FILES['certificate']) && $_FILES['certificate']['error'] === UPLOAD_ERR_OK) {
+        $certificateContent = file_get_contents($_FILES['certificate']['tmp_name']);
+      }
+
+      $sql = "INSERT INTO internship (name, usn, role, phone, location, start_date, end_date, languages_used, certificate)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+      $stmt = $conn->prepare($sql);
+      $stmt->bind_param(
+        "sssssssss",
+        $internName,
+        $usn,
+        $role,
+        $phone,
+        $location,
+        $start_date,
+        $end_date,
+        $languages_used,
+        $certificateContent
+      );
+
+      if ($stmt->execute()) {
+        $submitted = true;
+        $hasSubmitted = true; // Update flag after successful submission
+      } else {
+        throw new Exception("Database Error: " . $conn->error);
+      }
+    } catch (mysqli_sql_exception $e) {
+      // Handle duplicate entry error (code 1062)
+      if ($e->getCode() == 1062) {
+        echo "<script>alert('You have already submitted internship details.');</script>";
+        $hasSubmitted = true;
+      } else {
+        echo "<script>alert('Error: " . addslashes($e->getMessage()) . "');</script>";
+      }
+    } catch (Exception $e) {
+      echo "<script>alert('Error: " . addslashes($e->getMessage()) . "');</script>";
+    } finally {
+      if (isset($stmt)) {
+        $stmt->close();
+      }
+    }
+  }
 }
 ?>
 
@@ -84,161 +117,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       <!-- Form Content -->
       <div class="p-8 md:p-10">
-        <form id="applicationForm" action="internship.php" method="POST" enctype="multipart/form-data"
-          onsubmit="return checkForm(event)" class="space-y-6">
-          <!-- Personal Information Section -->
-          <div class="space-y-6">
-            <h2 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">Personal Information</h2>
-
-            <!-- Name Field -->
-            <div class="space-y-2">
-              <label for="name" class="block text-sm font-medium text-gray-700">Full Name <span
-                  class="text-red-500">*</span></label>
-              <div class="relative">
-                <input id="name" name="name" type="text" value="<?php echo htmlspecialchars($userName); ?>" class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg bg-gray-100">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
+        <?php if ($hasSubmitted): ?>
+          <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-6 rounded-lg">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                  fill="currentColor">
+                  <path fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm text-green-700">
+                  You have already submitted your internship details. You cannot submit again.
+                </p>
               </div>
             </div>
-
-            <!-- USN Field -->
-            <div class="space-y-2">
-              <label for="usn" class="block text-sm font-medium text-gray-700">USN <span
-                  class="text-red-500">*</span></label>
-              <div class="relative">
-                <input id="usn" name="usn" type="text" value="<?php echo htmlspecialchars($usn); ?>"
-                  class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg bg-gray-100">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            <!-- Internship Details Section -->
+          </div>
+          <div class="text-center mt-6">
+            <a href="stDashboard.php"
+              class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+              Return to Dashboard
+            </a>
+          </div>
+        <?php else: ?>
+          <form id="applicationForm" action="internship.php" method="POST" enctype="multipart/form-data"
+            onsubmit="return checkForm(event)" class="space-y-6">
+            <!-- Personal Information Section -->
             <div class="space-y-6">
-              <h2 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">Internship Details</h2>
+              <h2 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">Personal Information</h2>
 
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Role Field -->
-                <div class="space-y-2">
-                  <label for="role" class="block text-sm font-medium text-gray-700">Role <span
-                      class="text-red-500">*</span></label>
-                  <div class="relative">
-                    <input id="role" name="role" type="text" placeholder="Enter your Internship Role"
-                      class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  </div>
-                  <p class="mt-1 text-sm text-red-600 hidden" id="roleError"></p>
-                </div>
-
-                <!-- Phone Field -->
-                <div class="space-y-2">
-                  <label for="phone" class="block text-sm font-medium text-gray-700">Contact No <span
-                      class="text-red-500">*</span></label>
-                  <div class="relative">
-                    <input id="phone" name="phone" type="tel" placeholder="Enter company Contanct number"
-                      class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                      </svg>
-                    </div>
-                  </div>
-                  <p class="mt-1 text-sm text-red-600 hidden" id="phoneError"></p>
-                </div>
-              </div>
-
-              <!-- Location Field -->
+              <!-- Name Field -->
               <div class="space-y-2">
-                <label for="location" class="block text-sm font-medium text-gray-700">Location <span
+                <label for="name" class="block text-sm font-medium text-gray-700">Full Name <span
                     class="text-red-500">*</span></label>
                 <div class="relative">
-                  <input id="location" name="location" type="text" placeholder="Enter company location"
-                    class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                  <input id="name" name="name" type="text" value="<?php echo htmlspecialchars($userName); ?>"
+                    class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg bg-gray-100">
                   <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
                 </div>
-                <p class="mt-1 text-sm text-red-600 hidden" id="locationError"></p>
               </div>
 
-              <!-- Date Fields -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="space-y-2">
-                  <label for="start-date" class="block text-sm font-medium text-gray-700">Start Date <span
-                      class="text-red-500">*</span></label>
-                  <div class="relative">
-                    <input id="start-date" name="start-date" type="date"
-                      class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  </div>
-                  <p class="mt-1 text-sm text-red-600 hidden" id="startDateError"></p>
-                </div>
-                <div class="space-y-2">
-                  <label for="end-date" class="block text-sm font-medium text-gray-700">End Date <span
-                      class="text-red-500">*</span></label>
-                  <div class="relative">
-                    <input id="end-date" name="end-date" type="date"
-                      class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  </div>
-                  <p class="mt-1 text-sm text-red-600 hidden" id="endDateError"></p>
-                </div>
-              </div>
-
-              <!-- Languages Field -->
+              <!-- USN Field -->
               <div class="space-y-2">
-                <label for="working-on" class="block text-sm font-medium text-gray-700">Languages Used <span
+                <label for="usn" class="block text-sm font-medium text-gray-700">USN <span
                     class="text-red-500">*</span></label>
                 <div class="relative">
-                  <input id="working-on" name="working-on" type="text" placeholder="Enter languages used"
-                    class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
-                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
-                  </div>
-                </div>
-                <p class="mt-1 text-sm text-red-600 hidden" id="workingOnError"></p>
-              </div>
-
-              <!-- Certificate Field -->
-              <div class="space-y-2">
-                <label for="certificate" class="block text-sm font-medium text-gray-700">Certificate <span
-                    class="text-red-500">*</span></label>
-                <div class="relative">
-                  <input id="certificate" name="certificate" type="file" accept=".pdf,.doc,.docx,.jpg,.png"
-                    onchange="validateFile(this)"
-                    class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                  <input id="usn" name="usn" type="text" value="<?php echo htmlspecialchars($usn); ?>"
+                    class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg bg-gray-100">
                   <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -246,25 +178,153 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </svg>
                   </div>
                 </div>
-                <p class="mt-1 text-xs text-gray-500">Accepted formats: PDF, DOC, JPG, PNG (Max 200KB)</p>
-                <p class="mt-1 text-sm text-red-600 hidden" id="file-error"></p>
               </div>
-            </div>
 
-            <!-- Submit Button -->
-            <div class="pt-6">
-              <button type="submit"
-                class="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg transition-all duration-300 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-blue-500/20">
-                Submit Internship Details
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline ml-2 -mr-1" viewBox="0 0 20 20"
-                  fill="currentColor">
-                  <path fill-rule="evenodd"
-                    d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
-                    clip-rule="evenodd" />
-                </svg>
-              </button>
-            </div>
-        </form>
+              <!-- Internship Details Section -->
+              <div class="space-y-6">
+                <h2 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">Internship Details</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <!-- Role Field -->
+                  <div class="space-y-2">
+                    <label for="role" class="block text-sm font-medium text-gray-700">Role <span
+                        class="text-red-500">*</span></label>
+                    <div class="relative">
+                      <input id="role" name="role" type="text" placeholder="Enter your Internship Role"
+                        class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <p class="mt-1 text-sm text-red-600 hidden" id="roleError"></p>
+                  </div>
+
+                  <!-- Phone Field -->
+                  <div class="space-y-2">
+                    <label for="phone" class="block text-sm font-medium text-gray-700">Contact No <span
+                        class="text-red-500">*</span></label>
+                    <div class="relative">
+                      <input id="phone" name="phone" type="tel" placeholder="Enter company Contanct number"
+                        class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <p class="mt-1 text-sm text-red-600 hidden" id="phoneError"></p>
+                  </div>
+                </div>
+
+                <!-- Location Field -->
+                <div class="space-y-2">
+                  <label for="location" class="block text-sm font-medium text-gray-700">Location <span
+                      class="text-red-500">*</span></label>
+                  <div class="relative">
+                    <input id="location" name="location" type="text" placeholder="Enter company location"
+                      class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <p class="mt-1 text-sm text-red-600 hidden" id="locationError"></p>
+                </div>
+
+                <!-- Date Fields -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div class="space-y-2">
+                    <label for="start-date" class="block text-sm font-medium text-gray-700">Start Date <span
+                        class="text-red-500">*</span></label>
+                    <div class="relative">
+                      <input id="start-date" name="start-date" type="date"
+                        class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <p class="mt-1 text-sm text-red-600 hidden" id="startDateError"></p>
+                  </div>
+                  <div class="space-y-2">
+                    <label for="end-date" class="block text-sm font-medium text-gray-700">End Date <span
+                        class="text-red-500">*</span></label>
+                    <div class="relative">
+                      <input id="end-date" name="end-date" type="date"
+                        class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <p class="mt-1 text-sm text-red-600 hidden" id="endDateError"></p>
+                  </div>
+                </div>
+
+                <!-- Languages Field -->
+                <div class="space-y-2">
+                  <label for="working-on" class="block text-sm font-medium text-gray-700">Languages Used <span
+                      class="text-red-500">*</span></label>
+                  <div class="relative">
+                    <input id="working-on" name="working-on" type="text" placeholder="Enter languages used"
+                      class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <p class="mt-1 text-sm text-red-600 hidden" id="workingOnError"></p>
+                </div>
+
+                <!-- Certificate Field -->
+                <div class="space-y-2">
+                  <label for="certificate" class="block text-sm font-medium text-gray-700">Certificate <span
+                      class="text-red-500">*</span></label>
+                  <div class="relative">
+                    <input id="certificate" name="certificate" type="file" accept=".pdf,.doc,.docx,.jpg,.png"
+                      onchange="validateFile(this)"
+                      class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <p class="mt-1 text-xs text-gray-500">Accepted formats: PDF, DOC, JPG, PNG (Max 200KB)</p>
+                  <p class="mt-1 text-sm text-red-600 hidden" id="file-error"></p>
+                </div>
+              </div>
+
+              <!-- Submit Button -->
+              <div class="pt-6">
+                <button type="submit"
+                  class="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg transition-all duration-300 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                  Submit Internship Details
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline ml-2 -mr-1" viewBox="0 0 20 20"
+                    fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
+                      clip-rule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+          </form>
+        <?php endif; ?>
       </div>
     </div>
   </div>

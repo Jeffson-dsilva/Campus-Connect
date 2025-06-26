@@ -5,6 +5,37 @@ require_once 'config.php';
 // Set the title for the page
 $title = 'Project Records';
 
+// Handle delete request
+if (isset($_GET['delete']) && isset($_GET['usn'])) {
+    $usn = $_GET['usn'];
+    
+    // Prepare and execute delete query
+    $stmt = $conn->prepare("DELETE FROM project WHERE usn = ?");
+    $stmt->bind_param("s", $usn);
+    $stmt->execute();
+    
+    if ($stmt->affected_rows > 0) {
+        // Remove the deleted record from the session array
+        foreach ($_SESSION['selected_projects'] as $key => $data) {
+            if (is_array($data)) {
+                $record_usn = $data[0];
+            } else {
+                list($record_usn, $record_name) = explode('|', $data);
+            }
+            
+            if ($record_usn == $usn) {
+                unset($_SESSION['selected_projects'][$key]);
+                break;
+            }
+        }
+        
+        // Redirect to prevent refresh issues
+        header("Location: ftproject.php");
+        exit();
+    }
+    $stmt->close();
+}
+
 // Check if any data was sent via POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['selected_data'])) {
@@ -24,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Fetch data from session if available
-$selectedInternships = $_SESSION['selected_projects'] ?? [];
+$selectedProjects = $_SESSION['selected_projects'] ?? [];
 ?>
 
 <!DOCTYPE html>
@@ -97,8 +128,8 @@ $selectedInternships = $_SESSION['selected_projects'] ?? [];
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200" id="projectTableBody">
                         <?php
-                        if (!empty($selectedInternships)) {
-                            foreach ($selectedInternships as $data) {
+                        if (!empty($selectedProjects)) {
+                            foreach ($selectedProjects as $data) {
                                 if (is_array($data)) {
                                     $usn = $data[0];
                                     $name = $data[1];
@@ -114,10 +145,15 @@ $selectedInternships = $_SESSION['selected_projects'] ?? [];
                                         <td class='px-6 py-4 whitespace-nowrap text-gray-700'>
                                             " . htmlspecialchars($name) . "
                                         </td>
-                                        <td class='px-6 py-4 whitespace-nowrap'>
+                                        <td class='px-6 py-4 whitespace-nowrap space-x-2'>
                                             <a href='projectdetails.php?usn=" . urlencode($usn) . "' 
                                                 class='action-btn inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'>
                                                 <i class='fas fa-eye mr-1'></i> View Details
+                                            </a>
+                                            <a href='ftproject.php?delete=true&usn=" . urlencode($usn) . "' 
+                                                class='action-btn inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500'
+                                                onclick=\"return confirm('Are you sure you want to delete this project record? This action cannot be undone.');\">
+                                                <i class='fas fa-trash-alt mr-1'></i> Delete
                                             </a>
                                         </td>
                                     </tr>";

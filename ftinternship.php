@@ -15,6 +15,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['selected_data'])) {
     exit();
 }
 
+// Handle delete request
+if (isset($_GET['delete']) && isset($_GET['usn'])) {
+    $usn = $_GET['usn'];
+    
+    // Prepare and execute delete query
+    $stmt = $conn->prepare("DELETE FROM internship WHERE usn = ?");
+    $stmt->bind_param("s", $usn);
+    $stmt->execute();
+    
+    if ($stmt->affected_rows > 0) {
+        // Remove the deleted record from the session array
+        foreach ($_SESSION['selected_internships'] as $key => $data) {
+            list($record_usn, $record_name) = explode('|', $data);
+            if ($record_usn == $usn) {
+                unset($_SESSION['selected_internships'][$key]);
+                break;
+            }
+        }
+        
+        // Redirect to prevent refresh issues
+        header("Location: ftinternship.php");
+        exit();
+    }
+    $stmt->close();
+}
+
 // Fetch data from session if available
 $selectedInternships = $_SESSION['selected_internships'] ?? [];
 
@@ -106,10 +132,15 @@ $_SESSION['referrer'] = 'ftinternship.php';
                                         <td class='px-6 py-4 whitespace-nowrap text-gray-700'>
                                             " . htmlspecialchars($name) . "
                                         </td>
-                                        <td class='px-6 py-4 whitespace-nowrap'>
+                                        <td class='px-6 py-4 whitespace-nowrap space-x-2'>
                                             <a href='details.php?usn=" . urlencode($usn) . "' 
                                                 class='action-btn inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'>
                                                 <i class='fas fa-eye mr-1'></i> View Details
+                                            </a>
+                                            <a href='ftinternship.php?delete=true&usn=" . urlencode($usn) . "' 
+                                                class='action-btn inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500'
+                                                onclick=\"return confirm('Are you sure you want to delete this internship record?');\">
+                                                <i class='fas fa-trash-alt mr-1'></i> Delete
                                             </a>
                                         </td>
                                     </tr>";

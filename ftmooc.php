@@ -4,6 +4,37 @@ require_once 'config.php';
 // Set the title for the page
 $title = 'MOOC Records';
 
+// Handle delete request
+if (isset($_GET['delete']) && isset($_GET['usn'])) {
+    $usn = $_GET['usn'];
+    
+    // Prepare and execute delete query
+    $stmt = $conn->prepare("DELETE FROM mooc_courses WHERE usn = ?");
+    $stmt->bind_param("s", $usn);
+    $stmt->execute();
+    
+    if ($stmt->affected_rows > 0) {
+        // Remove the deleted record from the session array
+        foreach ($_SESSION['selected_mooc'] as $key => $data) {
+            if (is_array($data)) {
+                $record_usn = $data[0];
+            } else {
+                list($record_usn, $record_name) = explode('|', $data);
+            }
+            
+            if ($record_usn == $usn) {
+                unset($_SESSION['selected_mooc'][$key]);
+                break;
+            }
+        }
+        
+        // Redirect to prevent refresh issues
+        header("Location: ftmooc.php");
+        exit();
+    }
+    $stmt->close();
+}
+
 // Check if any data was sent via POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['selected_data'])) {
@@ -112,10 +143,15 @@ $selectedCourses = $_SESSION['selected_mooc'] ?? [];
                                         <td class='px-6 py-4 whitespace-nowrap text-gray-700'>
                                             " . htmlspecialchars($name) . "
                                         </td>
-                                        <td class='px-6 py-4 whitespace-nowrap'>
+                                        <td class='px-6 py-4 whitespace-nowrap space-x-2'>
                                             <a href='moocdetails.php?usn=" . urlencode($usn) . "' 
                                                 class='action-btn inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'>
                                                 <i class='fas fa-eye mr-1'></i> View Details
+                                            </a>
+                                            <a href='ftmooc.php?delete=true&usn=" . urlencode($usn) . "' 
+                                                class='action-btn inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500'
+                                                onclick=\"return confirm('Are you sure you want to delete this MOOC record?');\">
+                                                <i class='fas fa-trash-alt mr-1'></i> Delete
                                             </a>
                                         </td>
                                     </tr>";

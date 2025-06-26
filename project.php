@@ -23,11 +23,24 @@ if (!$name || !$usn) {
     exit();
 }
 
+// Check if student has already submitted a project
+$checkQuery = "SELECT id FROM project WHERE usn = ?";
+$checkStmt = $conn->prepare($checkQuery);
+$checkStmt->bind_param("s", $usn);
+$checkStmt->execute();
+$checkStmt->store_result();
+$hasSubmitted = $checkStmt->num_rows > 0;
+$checkStmt->close();
+
 $submitted = false; // Initialize submission flag
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Validate and fetch form data
-    $name = trim($_POST['name']);
+    // If already submitted, prevent resubmission
+    if ($hasSubmitted) {
+        echo "<script>alert('You have already submitted project details.');</script>";
+    } else {
+        // Validate and fetch form data
+        $name = trim($_POST['name']);
     $usn = trim($_POST['usn']);
     $project_role = trim($_POST['role']);
     $phone = trim($_POST['phone']);
@@ -42,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $problem_statement = trim($_POST['problem-statement']);
     $proposed_solution = trim($_POST['solution']);
     $github_link = trim($_POST['github-link']);
-    
+
     // Handle file upload (as binary data)
     $uploaded_file_content = null;
     if (isset($_FILES['certificate']) && $_FILES['certificate']['error'] === UPLOAD_ERR_OK) {
@@ -89,18 +102,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo "<script>alert('Error saving project details: " . htmlspecialchars($stmt->error) . "');</script>";
     }
     $stmt->close();
+         $hasSubmitted = true; // Update flag after submission
+    }
+
 }
 ?>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<main class="min-h-screen bg-gradient-to-br from-blue-100 to-indigo-400 py-12 px-4 sm:px-6 lg:px-8">
+<main class="min-h-screen bg-gradient-to-br from-blue-200 to-indigo-400 py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-6xl mx-auto">
         <!-- Form Card with Glass Morphism Effect -->
         <div class="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl overflow-hidden border border-white/20">
             <!-- Form Header with Gradient -->
-            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-center">
+            <div class="bg-gradient-to-r from-blue-400 to-blue-700 p-8 text-center">
                 <div class="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-full mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                     </svg>
                 </div>
                 <h1 class="text-3xl font-bold text-white mb-2">Project Details</h1>
@@ -109,23 +128,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <!-- Form Content -->
             <div class="p-8 md:p-10">
-                <form id="project-form" action="project.php" method="POST" enctype="multipart/form-data" class="space-y-6">
-                    <p class="text-sm text-gray-500 font-medium">Fields marked with <span class="text-red-500">*</span> are required</p>
+                <?php if ($hasSubmitted): ?>
+                    <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-6 rounded-lg">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-green-700">
+                                    You have successfully submitted your project details. Faculty will review your submission.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-6">
+                        <a href="stDashboard.php" class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                            Return to Dashboard
+                        </a>
+                    </div>
+                <?php else: ?>
+                <form id="project-form" action="project.php" method="POST" enctype="multipart/form-data"
+                    class="space-y-6">
+                    <p class="text-sm text-gray-500 font-medium">Fields marked with <span class="text-red-500">*</span>
+                        are required</p>
 
                     <!-- Personal Information Section -->
                     <div class="space-y-6">
-                        <h2 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">Personal Information</h2>
-                        
+                        <h2 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">Personal
+                            Information</h2>
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Name Field -->
                             <div class="space-y-2">
-                                <label for="name" class="block text-sm font-medium text-gray-700">Name <span class="text-red-500">*</span></label>
+                                <label for="name" class="block text-sm font-medium text-gray-700">Name <span
+                                        class="text-red-500">*</span></label>
                                 <div class="relative">
-                                    <input id="name" name="name" type="text" placeholder="Your full name" value="<?php echo htmlspecialchars($name); ?>"
-                                        class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" required>
+                                    <input id="name" name="name" type="text" placeholder="Your full name"
+                                        value="<?php echo htmlspecialchars($name); ?>"
+                                        class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                        required>
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24"
+                                            stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                         </svg>
                                     </div>
                                 </div>
@@ -134,13 +182,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <!-- USN Field -->
                             <div class="space-y-2">
-                                <label for="usn" class="block text-sm font-medium text-gray-700">USN <span class="text-red-500">*</span></label>
+                                <label for="usn" class="block text-sm font-medium text-gray-700">USN <span
+                                        class="text-red-500">*</span></label>
                                 <div class="relative">
-                                    <input id="usn" name="usn" type="text" placeholder="Your USN" value="<?php echo htmlspecialchars($usn); ?>"
-                                        class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" required>
+                                    <input id="usn" name="usn" type="text" placeholder="Your USN"
+                                        value="<?php echo htmlspecialchars($usn); ?>"
+                                        class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                        required>
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24"
+                                            stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                         </svg>
                                     </div>
                                 </div>
@@ -151,18 +204,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <!-- Project Details Section -->
                     <div class="space-y-6">
-                        <h2 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">Project Details</h2>
-                        
+                        <h2 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">Project Details
+                        </h2>
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Role Field -->
                             <div class="space-y-2">
-                                <label for="role" class="block text-sm font-medium text-gray-700">Project Role <span class="text-red-500">*</span></label>
+                                <label for="role" class="block text-sm font-medium text-gray-700">Project Role <span
+                                        class="text-red-500">*</span></label>
                                 <div class="relative">
                                     <input id="role" name="role" type="text" placeholder="Your role in the project"
-                                        class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" required>
+                                        class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                        required>
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24"
+                                            stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                         </svg>
                                     </div>
                                 </div>
@@ -171,13 +229,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <!-- Phone Field -->
                             <div class="space-y-2">
-                                <label for="phone" class="block text-sm font-medium text-gray-700">Contact No <span class="text-red-500">*</span></label>
+                                <label for="phone" class="block text-sm font-medium text-gray-700">Contact No <span
+                                        class="text-red-500">*</span></label>
                                 <div class="relative">
                                     <input id="phone" name="phone" type="tel" placeholder="Your contact number"
-                                        class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" required>
+                                        class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                        required>
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24"
+                                            stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                                         </svg>
                                     </div>
                                 </div>
@@ -187,14 +249,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         <!-- Location Field -->
                         <div class="space-y-2">
-                            <label for="location" class="block text-sm font-medium text-gray-700">Location <span class="text-red-500">*</span></label>
+                            <label for="location" class="block text-sm font-medium text-gray-700">Location <span
+                                    class="text-red-500">*</span></label>
                             <div class="relative">
                                 <input id="location" name="location" type="text" placeholder="Project location"
-                                    class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" required>
+                                    class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                    required>
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                     </svg>
                                 </div>
                             </div>
@@ -204,26 +271,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <!-- Date Fields -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="space-y-2">
-                                <label for="start-date" class="block text-sm font-medium text-gray-700">Start Date <span class="text-red-500">*</span></label>
+                                <label for="start-date" class="block text-sm font-medium text-gray-700">Start Date <span
+                                        class="text-red-500">*</span></label>
                                 <div class="relative">
                                     <input id="start-date" name="start-date" type="date"
-                                        class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" required>
+                                        class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                        required>
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24"
+                                            stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
                                     </div>
                                 </div>
                                 <p class="mt-1 text-sm text-red-600 hidden" id="start-date-error"></p>
                             </div>
                             <div class="space-y-2">
-                                <label for="end-date" class="block text-sm font-medium text-gray-700">End Date <span class="text-red-500">*</span></label>
+                                <label for="end-date" class="block text-sm font-medium text-gray-700">End Date <span
+                                        class="text-red-500">*</span></label>
                                 <div class="relative">
                                     <input id="end-date" name="end-date" type="date"
-                                        class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" required>
+                                        class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                        required>
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24"
+                                            stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
                                     </div>
                                 </div>
@@ -233,13 +308,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         <!-- Languages Field -->
                         <div class="space-y-2">
-                            <label for="languages-used" class="block text-sm font-medium text-gray-700">Languages/Technologies Used <span class="text-red-500">*</span></label>
+                            <label for="languages-used"
+                                class="block text-sm font-medium text-gray-700">Languages/Technologies Used <span
+                                    class="text-red-500">*</span></label>
                             <div class="relative">
-                                <input id="languages-used" name="languages-used" type="text" placeholder="Java, Python, React etc."
-                                    class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" required>
+                                <input id="languages-used" name="languages-used" type="text"
+                                    placeholder="Java, Python, React etc."
+                                    class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                    required>
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                     </svg>
                                 </div>
                             </div>
@@ -248,13 +329,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         <!-- Project Title Field -->
                         <div class="space-y-2">
-                            <label for="project-title" class="block text-sm font-medium text-gray-700">Project Title <span class="text-red-500">*</span></label>
+                            <label for="project-title" class="block text-sm font-medium text-gray-700">Project Title
+                                <span class="text-red-500">*</span></label>
                             <div class="relative">
-                                <input id="project-title" name="project-title" type="text" placeholder="Your project title"
-                                    class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" required>
+                                <input id="project-title" name="project-title" type="text"
+                                    placeholder="Your project title"
+                                    class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                    required>
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
                                 </div>
                             </div>
@@ -263,13 +349,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         <!-- Project Domain Field -->
                         <div class="space-y-2">
-                            <label for="project-domain" class="block text-sm font-medium text-gray-700">Project Domain <span class="text-red-500">*</span></label>
+                            <label for="project-domain" class="block text-sm font-medium text-gray-700">Project Domain
+                                <span class="text-red-500">*</span></label>
                             <div class="relative">
-                                <input id="project-domain" name="project-domain" type="text" placeholder="Web Development, Data Science etc."
-                                    class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" required>
+                                <input id="project-domain" name="project-domain" type="text"
+                                    placeholder="Web Development, Data Science etc."
+                                    class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                    required>
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                     </svg>
                                 </div>
                             </div>
@@ -278,45 +369,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         <!-- Project Description Field -->
                         <div class="space-y-2">
-                            <label for="project-description" class="block text-sm font-medium text-gray-700">Project Description <span class="text-red-500">*</span></label>
-                            <textarea id="project-description" name="project-description" rows="4" placeholder="Describe your project objectives and outcomes"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" required></textarea>
+                            <label for="project-description" class="block text-sm font-medium text-gray-700">Project
+                                Description <span class="text-red-500">*</span></label>
+                            <textarea id="project-description" name="project-description" rows="4"
+                                placeholder="Describe your project objectives and outcomes"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                required></textarea>
                             <p class="mt-1 text-sm text-red-600 hidden" id="project-description-error"></p>
                         </div>
 
                         <!-- Features Field -->
                         <div class="space-y-2">
-                            <label for="features" class="block text-sm font-medium text-gray-700">Project Features/Modules <span class="text-red-500">*</span></label>
-                            <textarea id="features" name="features" rows="4" placeholder="List the main features or modules developed"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" required></textarea>
+                            <label for="features" class="block text-sm font-medium text-gray-700">Project
+                                Features/Modules <span class="text-red-500">*</span></label>
+                            <textarea id="features" name="features" rows="4"
+                                placeholder="List the main features or modules developed"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                required></textarea>
                             <p class="mt-1 text-sm text-red-600 hidden" id="features-error"></p>
                         </div>
 
                         <!-- Problem Statement Field -->
                         <div class="space-y-2">
-                            <label for="problem-statement" class="block text-sm font-medium text-gray-700">Problem Statement <span class="text-red-500">*</span></label>
-                            <textarea id="problem-statement" name="problem-statement" rows="4" placeholder="Describe the problem the project addresses"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" required></textarea>
+                            <label for="problem-statement" class="block text-sm font-medium text-gray-700">Problem
+                                Statement <span class="text-red-500">*</span></label>
+                            <textarea id="problem-statement" name="problem-statement" rows="4"
+                                placeholder="Describe the problem the project addresses"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                required></textarea>
                             <p class="mt-1 text-sm text-red-600 hidden" id="problem-statement-error"></p>
                         </div>
 
                         <!-- Solution Field -->
                         <div class="space-y-2">
-                            <label for="solution" class="block text-sm font-medium text-gray-700">Proposed Solution <span class="text-red-500">*</span></label>
-                            <textarea id="solution" name="solution" rows="4" placeholder="Explain the solution provided by the project"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" required></textarea>
+                            <label for="solution" class="block text-sm font-medium text-gray-700">Proposed Solution
+                                <span class="text-red-500">*</span></label>
+                            <textarea id="solution" name="solution" rows="4"
+                                placeholder="Explain the solution provided by the project"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                required></textarea>
                             <p class="mt-1 text-sm text-red-600 hidden" id="solution-error"></p>
                         </div>
 
                         <!-- GitHub Link Field -->
                         <div class="space-y-2">
-                            <label for="github-link" class="block text-sm font-medium text-gray-700">Source Code Repository</label>
+                            <label for="github-link" class="block text-sm font-medium text-gray-700">Source Code
+                                Repository</label>
                             <div class="relative">
-                                <input id="github-link" name="github-link" type="url" placeholder="https://github.com/your-project"
+                                <input id="github-link" name="github-link" type="url"
+                                    placeholder="https://github.com/your-project"
                                     class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                                     </svg>
                                 </div>
                             </div>
@@ -324,13 +431,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         <!-- Certificate Field -->
                         <div class="space-y-2">
-                            <label for="certificate" class="block text-sm font-medium text-gray-700">Upload File <span class="text-red-500">*</span></label>
+                            <label for="certificate" class="block text-sm font-medium text-gray-700">Upload File <span
+                                    class="text-red-500">*</span></label>
                             <div class="relative">
-                                <input id="certificate" name="certificate" type="file" accept=".pdf,.doc,.docx,.jpg,.png" onchange="validateFile(this)"
-                                    class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required>
+                                <input id="certificate" name="certificate" type="file"
+                                    accept=".pdf,.doc,.docx,.jpg,.png" onchange="validateFile(this)"
+                                    class="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                    required>
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
                                 </div>
                             </div>
@@ -341,14 +453,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <!-- Submit Button -->
                     <div class="pt-6">
-                        <button type="submit" class="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg transition-all duration-300 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                        <button type="submit"
+                            class="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg transition-all duration-300 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                             Submit Project Details
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline ml-2 -mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline ml-2 -mr-1"
+                                viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd"
+                                    d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
+                                    clip-rule="evenodd" />
                             </svg>
                         </button>
                     </div>
                 </form>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -360,7 +477,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="bg-white rounded-2xl overflow-hidden shadow-2xl max-w-md w-full animate-zoom-in">
             <div class="bg-gradient-to-r from-green-500 to-emerald-600 p-6 text-center">
                 <div class="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
                 </div>
@@ -369,7 +487,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="p-6 text-center">
                 <p class="text-gray-600 mb-6">Thank you for sharing your project with us.</p>
-                <button onclick="closeModal()" class="w-full py-3 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg shadow transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                <button onclick="closeModal()"
+                    class="w-full py-3 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg shadow transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                     Return to Dashboard
                 </button>
             </div>
@@ -379,219 +498,348 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!-- Update the JavaScript section in project.php -->
 <script>
-// Form validation and submission handling
-document.getElementById('project-form').addEventListener('submit', function (event) {
-    event.preventDefault(); // Prevent default form submission
+    // Form validation and submission handling
+    document.getElementById('project-form').addEventListener('submit', function (event) {
+        event.preventDefault(); // Prevent default form submission
 
-    let isValid = true;
+        let isValid = true;
 
-    // Clear any previous error messages
-    clearErrors();
+        // Clear any previous error messages
+        clearErrors();
 
-    // Validate name
-    const name = document.getElementById('name').value.trim();
-    if (!name) {
-        document.getElementById('name-error').textContent = 'Name is required';
-        document.getElementById('name-error').classList.remove('hidden');
-        isValid = false;
+        // Validate name
+        const name = document.getElementById('name').value.trim();
+        if (!name) {
+            document.getElementById('name-error').textContent = 'Name is required';
+            document.getElementById('name-error').classList.remove('hidden');
+            isValid = false;
+        }
+
+        // Validate USN
+        const usn = document.getElementById('usn').value.trim();
+        if (!usn) {
+            document.getElementById('usn-error').textContent = 'USN is required';
+            document.getElementById('usn-error').classList.remove('hidden');
+            isValid = false;
+        }
+
+        // Validate role
+        const role = document.getElementById('role').value.trim();
+        if (!role) {
+            document.getElementById('role-error').textContent = 'Project role is required';
+            document.getElementById('role-error').classList.remove('hidden');
+            isValid = false;
+        }
+
+        // Validate phone
+        const phone = document.getElementById('phone').value.trim();
+        const phoneRegex = /^[0-9]{10}$/;
+        if (!phone) {
+            document.getElementById('phone-error').textContent = 'Contact number is required';
+            document.getElementById('phone-error').classList.remove('hidden');
+            isValid = false;
+        } else if (!phoneRegex.test(phone)) {
+            document.getElementById('phone-error').textContent = 'Enter a valid 10-digit phone number';
+            document.getElementById('phone-error').classList.remove('hidden');
+            isValid = false;
+        }
+
+        // Validate location
+        const location = document.getElementById('location').value.trim();
+        if (!location) {
+            document.getElementById('location-error').textContent = 'Location is required';
+            document.getElementById('location-error').classList.remove('hidden');
+            isValid = false;
+        }
+
+        // Validate start date
+        const startDate = document.getElementById('start-date').value;
+        if (!startDate) {
+            document.getElementById('start-date-error').textContent = 'Start date is required';
+            document.getElementById('start-date-error').classList.remove('hidden');
+            isValid = false;
+        }
+
+        // Validate end date
+        const endDate = document.getElementById('end-date').value;
+        if (!endDate) {
+            document.getElementById('end-date-error').textContent = 'End date is required';
+            document.getElementById('end-date-error').classList.remove('hidden');
+            isValid = false;
+        } else if (startDate && new Date(endDate) < new Date(startDate)) {
+            document.getElementById('end-date-error').textContent = 'End date cannot be earlier than start date';
+            document.getElementById('end-date-error').classList.remove('hidden');
+            isValid = false;
+        }
+
+        // Validate languages used
+        const languagesUsed = document.getElementById('languages-used').value.trim();
+        if (!languagesUsed) {
+            document.getElementById('languages-used-error').textContent = 'Languages/Technologies used are required';
+            document.getElementById('languages-used-error').classList.remove('hidden');
+            isValid = false;
+        }
+
+        // Validate project title
+        const projectTitle = document.getElementById('project-title').value.trim();
+        if (!projectTitle) {
+            document.getElementById('project-title-error').textContent = 'Project title is required';
+            document.getElementById('project-title-error').classList.remove('hidden');
+            isValid = false;
+        }
+
+        // Validate project domain
+        const projectDomain = document.getElementById('project-domain').value.trim();
+        if (!projectDomain) {
+            document.getElementById('project-domain-error').textContent = 'Project domain is required';
+            document.getElementById('project-domain-error').classList.remove('hidden');
+            isValid = false;
+        }
+
+        // Validate project description
+        const projectDescription = document.getElementById('project-description').value.trim();
+        if (!projectDescription) {
+            document.getElementById('project-description-error').textContent = 'Project description is required';
+            document.getElementById('project-description-error').classList.remove('hidden');
+            isValid = false;
+        }
+
+        // Validate features
+        const features = document.getElementById('features').value.trim();
+        if (!features) {
+            document.getElementById('features-error').textContent = 'Project features are required';
+            document.getElementById('features-error').classList.remove('hidden');
+            isValid = false;
+        }
+
+        // Validate problem statement
+        const problemStatement = document.getElementById('problem-statement').value.trim();
+        if (!problemStatement) {
+            document.getElementById('problem-statement-error').textContent = 'Problem statement is required';
+            document.getElementById('problem-statement-error').classList.remove('hidden');
+            isValid = false;
+        }
+
+        // Validate solution
+        const solution = document.getElementById('solution').value.trim();
+        if (!solution) {
+            document.getElementById('solution-error').textContent = 'Solution is required';
+            document.getElementById('solution-error').classList.remove('hidden');
+            isValid = false;
+        }
+
+        // Validate file upload
+        const certificateFile = document.getElementById('certificate').files[0];
+        if (!certificateFile) {
+            document.getElementById('file-error').textContent = 'Certificate file is required';
+            document.getElementById('file-error').classList.remove('hidden');
+            isValid = false;
+        } else {
+            const validTypes = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
+            const maxSize = 200 * 1024; // 200KB
+            const fileExtension = certificateFile.name.split('.').pop().toLowerCase();
+
+            if (!validTypes.includes(fileExtension)) {
+                document.getElementById('file-error').textContent = 'Invalid file type. Please upload a valid file (PDF, DOC, DOCX, JPG, PNG).';
+                document.getElementById('file-error').classList.remove('hidden');
+                isValid = false;
+            } else if (certificateFile.size > maxSize) {
+                document.getElementById('file-error').textContent = 'File size exceeds the maximum limit of 200KB.';
+                document.getElementById('file-error').classList.remove('hidden');
+                isValid = false;
+            }
+        }
+
+        // If form is valid, submit the form
+        if (isValid) {
+            this.submit(); // Submit the form
+        }
+    });
+
+    // Close success modal and redirect
+    function closeModal() {
+        document.getElementById('successModal').style.display = 'none';
+        window.location.href = 'stDashboard.php';
     }
 
-    // Validate USN
-    const usn = document.getElementById('usn').value.trim();
-    if (!usn) {
-        document.getElementById('usn-error').textContent = 'USN is required';
-        document.getElementById('usn-error').classList.remove('hidden');
-        isValid = false;
-    }
-
-    // Validate role
-    const role = document.getElementById('role').value.trim();
-    if (!role) {
-        document.getElementById('role-error').textContent = 'Project role is required';
-        document.getElementById('role-error').classList.remove('hidden');
-        isValid = false;
-    }
-
-    // Validate phone
-    const phone = document.getElementById('phone').value.trim();
-    const phoneRegex = /^[0-9]{10}$/;
-    if (!phone) {
-        document.getElementById('phone-error').textContent = 'Contact number is required';
-        document.getElementById('phone-error').classList.remove('hidden');
-        isValid = false;
-    } else if (!phoneRegex.test(phone)) {
-        document.getElementById('phone-error').textContent = 'Enter a valid 10-digit phone number';
-        document.getElementById('phone-error').classList.remove('hidden');
-        isValid = false;
-    }
-
-    // Validate location
-    const location = document.getElementById('location').value.trim();
-    if (!location) {
-        document.getElementById('location-error').textContent = 'Location is required';
-        document.getElementById('location-error').classList.remove('hidden');
-        isValid = false;
-    }
-
-    // Validate start date
-    const startDate = document.getElementById('start-date').value;
-    if (!startDate) {
-        document.getElementById('start-date-error').textContent = 'Start date is required';
-        document.getElementById('start-date-error').classList.remove('hidden');
-        isValid = false;
-    }
-
-    // Validate end date
-    const endDate = document.getElementById('end-date').value;
-    if (!endDate) {
-        document.getElementById('end-date-error').textContent = 'End date is required';
-        document.getElementById('end-date-error').classList.remove('hidden');
-        isValid = false;
-    } else if (startDate && new Date(endDate) < new Date(startDate)) {
-        document.getElementById('end-date-error').textContent = 'End date cannot be earlier than start date';
-        document.getElementById('end-date-error').classList.remove('hidden');
-        isValid = false;
-    }
-
-    // Validate languages used
-    const languagesUsed = document.getElementById('languages-used').value.trim();
-    if (!languagesUsed) {
-        document.getElementById('languages-used-error').textContent = 'Languages/Technologies used are required';
-        document.getElementById('languages-used-error').classList.remove('hidden');
-        isValid = false;
-    }
-
-    // Validate project title
-    const projectTitle = document.getElementById('project-title').value.trim();
-    if (!projectTitle) {
-        document.getElementById('project-title-error').textContent = 'Project title is required';
-        document.getElementById('project-title-error').classList.remove('hidden');
-        isValid = false;
-    }
-
-    // Validate project domain
-    const projectDomain = document.getElementById('project-domain').value.trim();
-    if (!projectDomain) {
-        document.getElementById('project-domain-error').textContent = 'Project domain is required';
-        document.getElementById('project-domain-error').classList.remove('hidden');
-        isValid = false;
-    }
-
-    // Validate project description
-    const projectDescription = document.getElementById('project-description').value.trim();
-    if (!projectDescription) {
-        document.getElementById('project-description-error').textContent = 'Project description is required';
-        document.getElementById('project-description-error').classList.remove('hidden');
-        isValid = false;
-    }
-
-    // Validate features
-    const features = document.getElementById('features').value.trim();
-    if (!features) {
-        document.getElementById('features-error').textContent = 'Project features are required';
-        document.getElementById('features-error').classList.remove('hidden');
-        isValid = false;
-    }
-
-    // Validate problem statement
-    const problemStatement = document.getElementById('problem-statement').value.trim();
-    if (!problemStatement) {
-        document.getElementById('problem-statement-error').textContent = 'Problem statement is required';
-        document.getElementById('problem-statement-error').classList.remove('hidden');
-        isValid = false;
-    }
-
-    // Validate solution
-    const solution = document.getElementById('solution').value.trim();
-    if (!solution) {
-        document.getElementById('solution-error').textContent = 'Solution is required';
-        document.getElementById('solution-error').classList.remove('hidden');
-        isValid = false;
+    // Clear error messages
+    function clearErrors() {
+        const errorMessages = document.querySelectorAll('[id$="-error"]');
+        errorMessages.forEach(msg => {
+            msg.textContent = '';
+            msg.classList.add('hidden');
+        });
     }
 
     // Validate file upload
-    const certificateFile = document.getElementById('certificate').files[0];
-    if (!certificateFile) {
-        document.getElementById('file-error').textContent = 'Certificate file is required';
-        document.getElementById('file-error').classList.remove('hidden');
-        isValid = false;
-    } else {
+    function validateFile(input) {
+        const file = input.files[0];
+        const fileError = document.getElementById('file-error');
         const validTypes = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
         const maxSize = 200 * 1024; // 200KB
-        const fileExtension = certificateFile.name.split('.').pop().toLowerCase();
+
+        if (file) {
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            if (!validTypes.includes(fileExtension)) {
+                fileError.textContent = 'Invalid file type. Please upload a valid file (PDF, DOC, DOCX, JPG, PNG).';
+                fileError.classList.remove('hidden');
+                input.value = '';
+            } else if (file.size > maxSize) {
+                fileError.textContent = 'File size exceeds the maximum limit of 200KB.';
+                fileError.classList.remove('hidden');
+                input.value = '';
+            } else {
+                fileError.textContent = '';
+                fileError.classList.add('hidden');
+            }
+        }
+    }
+    const titleInput = document.querySelector('input[name="project-title"]');
+    const descInput = document.querySelector('textarea[name="project-description"]');
+    const submitBtn = document.querySelector('button[type="submit"]');
+
+    // Replace the existing chart creation code with this:
+
+// Create placeholder chart element
+const chartContainer = document.createElement('div');
+chartContainer.style = "margin: 20px 0; max-width: 400px; margin-left: auto; margin-right: auto;";
+const canvas = document.createElement('canvas');
+canvas.id = "predictionChart";
+chartContainer.appendChild(canvas);
+
+// Insert before the submit button
+submitBtn.parentNode.insertBefore(chartContainer, submitBtn);
+
+let chart;
+
+async function predictAndDisplay() {
+    const title = titleInput.value.trim();
+    const description = descInput.value.trim();
+
+    if (title && description) {
+        try {
+            const res = await fetch('http://127.0.0.1:5001/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, description })
+            });
+
+            const data = await res.json();
+            const acceptance = data.prediction;
+
+            // Destroy existing chart if any
+            if (chart) chart.destroy();
+
+            // Create gauge chart
+            chart = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    // Replace the datasets configuration with this:
+
+datasets: [{
+    data: [acceptance, 100 - acceptance],
+    backgroundColor: (context) => {
+        const chart = context.chart;
+        const {ctx, chartArea} = chart;
         
-        if (!validTypes.includes(fileExtension)) {
-            document.getElementById('file-error').textContent = 'Invalid file type. Please upload a valid file (PDF, DOC, DOCX, JPG, PNG).';
-            document.getElementById('file-error').classList.remove('hidden');
-            isValid = false;
-        } else if (certificateFile.size > maxSize) {
-            document.getElementById('file-error').textContent = 'File size exceeds the maximum limit of 200KB.';
-            document.getElementById('file-error').classList.remove('hidden');
-            isValid = false;
+        if (!chartArea) return null;
+        
+        // Acceptance gradient (green)
+        if (context.dataIndex === 0) {
+            const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+            gradient.addColorStop(0, '#86efac'); // light green-300
+            gradient.addColorStop(0.5, '#22c55e'); // green-500
+            gradient.addColorStop(1, '#15803d'); // dark green-700
+            return gradient;
+        }
+        // Rejection gradient (red)
+        else {
+            const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+            gradient.addColorStop(0, '#fca5a5'); // light red-300
+            gradient.addColorStop(0.5, '#ef4444'); // red-500
+            gradient.addColorStop(1, '#b91c1c'); // dark red-700
+            return gradient;
+        }
+    },
+    borderWidth: 0,
+    circumference: 180,
+    rotation: 270,
+    cutout: '80%'
+}]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: false
+                        }
+                    },
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true
+                    }
+                },
+                plugins: [{
+                id: 'gauge-text',
+                afterDraw(chart) {
+                    const {ctx, chartArea: {width, height}} = chart;
+                    ctx.restore();
+                    
+                    // Center text
+                    const text = `${acceptance.toFixed(1)}%`;
+                    ctx.font = 'bold 32px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-primary') || '#4F46E5';
+                    ctx.fillText(text, width / 2, height / 2 + 20);
+                    
+                    // Subtext
+                    ctx.font = 'bold 14px sans-serif';
+                    ctx.fillStyle = '#6B7280';
+                    ctx.fillText('Acceptance Probability', width / 2, height / 2 - 20);
+                    
+                    ctx.save();
+                }
+            }]
+            });
+
+        } catch (err) {
+            console.error('Prediction error:', err);
         }
     }
-
-    // If form is valid, submit the form
-    if (isValid) {
-        this.submit(); // Submit the form
-    }
-});
-
-// Close success modal and redirect
-function closeModal() {
-    document.getElementById('successModal').style.display = 'none';
-    window.location.href = 'stDashboard.php';
 }
-
-// Clear error messages
-function clearErrors() {
-    const errorMessages = document.querySelectorAll('[id$="-error"]');
-    errorMessages.forEach(msg => {
-        msg.textContent = '';
-        msg.classList.add('hidden');
+    // Trigger prediction after typing stops for 1 sec
+    let typingTimer;
+    [titleInput, descInput].forEach(input => {
+        input.addEventListener('input', () => {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(predictAndDisplay, 1000);
+        });
     });
-}
-
-// Validate file upload
-function validateFile(input) {
-    const file = input.files[0];
-    const fileError = document.getElementById('file-error');
-    const validTypes = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
-    const maxSize = 200 * 1024; // 200KB
-
-    if (file) {
-        const fileExtension = file.name.split('.').pop().toLowerCase();
-        if (!validTypes.includes(fileExtension)) {
-            fileError.textContent = 'Invalid file type. Please upload a valid file (PDF, DOC, DOCX, JPG, PNG).';
-            fileError.classList.remove('hidden');
-            input.value = '';
-        } else if (file.size > maxSize) {
-            fileError.textContent = 'File size exceeds the maximum limit of 200KB.';
-            fileError.classList.remove('hidden');
-            input.value = '';
-        } else {
-            fileError.textContent = '';
-            fileError.classList.add('hidden');
-        }
-    }
-}
 </script>
 
 <style>
-@keyframes zoom-in {
-    0% {
-        transform: scale(0.95);
-        opacity: 0;
+    @keyframes zoom-in {
+        0% {
+            transform: scale(0.95);
+            opacity: 0;
+        }
+
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
     }
-    100% {
-        transform: scale(1);
-        opacity: 1;
+
+    .animate-zoom-in {
+        animation: zoom-in 0.3s ease-out forwards;
     }
-}
-.animate-zoom-in {
-    animation: zoom-in 0.3s ease-out forwards;
-}
 </style>
 
 </body>
+
 </html>
