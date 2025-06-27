@@ -8,7 +8,7 @@ require_once 'ftheader.php';
     <!-- Welcome Header -->
     <div class="text-center mb-8 md:mb-12">
         <h1 class="text-2xl md:text-3xl font-bold text-[#0452a5] mb-2">Welcome, <?php echo explode(' ', $facultyName)[1]; ?>!</h1>
-        <p class="text-gray-600">Faculty Portal - St. Joseph Engineering College</p>
+        <p class="text-gray-600">Faculty - <?php echo $_SESSION['dept_code']; ?> Department </p>
     </div>
 
     <!-- Dashboard Cards Grid -->

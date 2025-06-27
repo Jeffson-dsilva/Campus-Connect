@@ -54,6 +54,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $_SESSION['usn'] = $row['usn'];
                 $_SESSION['name'] = $row['name'];
                 $_SESSION['employee_id'] = ''; // Empty for students
+                $_SESSION['dept_code'] = $row['dept_code'];
 
                 header("Location: stDashboard.php");
                 exit();
@@ -65,6 +66,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $_SESSION['name'] = $row['name'];
                 $_SESSION['employee_id'] = $row['employee_id'];
                 $_SESSION['usn'] = ''; // Empty for faculty
+                $_SESSION['dept_code'] = $row['dept_code'];
 
                 header("Location: ftDashboard.php");
                 exit();

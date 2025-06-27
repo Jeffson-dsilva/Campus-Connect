@@ -8,7 +8,7 @@ require_once 'header.php';
     <!-- Welcome Header -->
     <div class="text-center mb-8 md:mb-12">
         <h1 class="text-2xl md:text-3xl font-bold text-[#0452a5] mb-2">Welcome, <?php echo explode(' ', $name)[0]; ?>!</h1>
-        <p class="text-gray-600">Student Portal - St. Joseph Engineering College</p>
+        <p class="text-gray-600">Student - <?php echo $_SESSION['dept_code']; ?> Department </p>
     </div>
 
     <!-- Dashboard Cards Grid -->

@@ -6,11 +6,11 @@ if (!isset($_SESSION['email'])) {
 }
 
 $email = $_SESSION['email'];
-$query = "SELECT name, usn FROM students WHERE email = ?";
+$query = "SELECT name, usn, dept_code FROM students WHERE email = ?";
 $stmt = $conn->prepare($query);
 $stmt->bind_param("s", $email);
 $stmt->execute();
-$stmt->bind_result($name, $usn);
+$stmt->bind_result($name, $usn, $department);
 $stmt->fetch();
 $stmt->close();
 
@@ -142,6 +142,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
                                     <?php echo $isFaculty ? 'Faculty' : 'Student'; ?>:
                                     <span class="font-medium"><?php echo htmlspecialchars($usn); ?></span>
                                 </p>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    Department: <span class="font-medium"><?php echo htmlspecialchars($department); ?></span>
+                                </p>
                             </div>
                             <a href="stupdatePassword.php"
                                 class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors duration-150">
@@ -202,6 +205,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <div class="ml-3">
                         <p class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($name); ?></p>
                         <p class="text-xs text-gray-500"><?php echo htmlspecialchars($usn); ?></p>
+                        <p class="text-xs text-gray-500">Department: <?php echo htmlspecialchars($department); ?></p>
                     </div>
                 </div>
                 <div class="mt-3 px-2 space-y-1">
