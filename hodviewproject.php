@@ -2,6 +2,9 @@
 require_once 'config.php';
 require_once 'hodheader.php';
 
+// Get HOD's department code
+$hodDept = $_SESSION['dept'];
+
 // Pagination setup
 $records_per_page = 10;
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -10,17 +13,44 @@ $offset = ($page - 1) * $records_per_page;
 // Search functionality
 $search = isset($_GET['search']) ? $conn->real_escape_string($_GET['search']) : '';
 $search_condition = '';
+$search_params = [];
+
 if (!empty($search)) {
-    $search_condition = "WHERE name LIKE '%$search%' OR RIGHT(usn, 3) LIKE '%$search%'";
+    $search_condition = "AND (p.name LIKE ? OR p.usn LIKE ?)";
+    $search_param = "%$search%";
+    $search_params[] = $search_param;
+    $search_params[] = $search_param;
 }
 
-// Get total number of records with search condition
-$total_records = $conn->query("SELECT COUNT(*) FROM project $search_condition")->fetch_row()[0];
+// Get total number of records
+$total_records_query = "SELECT COUNT(*) FROM project p 
+                       JOIN students s ON p.usn = s.usn 
+                       WHERE s.dept_code = ? $search_condition";
+$stmt = $conn->prepare($total_records_query);
+
+if (!empty($search)) {
+    $stmt->bind_param("sss", $hodDept, $search_param, $search_param);
+} else {
+    $stmt->bind_param("s", $hodDept);
+}
+$stmt->execute();
+$total_records = $stmt->get_result()->fetch_row()[0];
 $total_pages = ceil($total_records / $records_per_page);
 
-// Database query with pagination and sorting
-$sql = "SELECT usn, name FROM project $search_condition ORDER BY usn ASC LIMIT $offset, $records_per_page";
-$result = $conn->query($sql);
+// Main query
+$sql = "SELECT p.usn, p.name FROM project p 
+        JOIN students s ON p.usn = s.usn 
+        WHERE s.dept_code = ? $search_condition 
+        ORDER BY p.usn ASC LIMIT ?, ?";
+$stmt = $conn->prepare($sql);
+
+if (!empty($search)) {
+    $stmt->bind_param("sssii", $hodDept, $search_param, $search_param, $offset, $records_per_page);
+} else {
+    $stmt->bind_param("sii", $hodDept, $offset, $records_per_page);
+}
+$stmt->execute();
+$result = $stmt->get_result();
 
 $title = "Project Details";
 ?>
@@ -42,7 +72,7 @@ $title = "Project Details";
             <div class="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4">
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
-                        <h2 class="text-xl font-semibold text-white">Project Records</h2>
+                        <h2 class="text-xl font-semibold text-white">Project Records <span class="text-sm font-normal">(<?php echo $hodDept; ?> Department)</span></h2>
                         <p class="text-blue-100 text-sm mt-1">View all student project details</p>
                     </div>
                     <div class="flex items-center gap-4 w-full sm:w-auto">
@@ -125,7 +155,7 @@ $title = "Project Details";
                             <?php echo empty($search) ? 'No records found' : 'No matching records'; ?>
                         </h3>
                         <p class="mt-1 text-sm text-gray-500">
-                            <?php echo empty($search) ? 'There are currently no project records available.' : 'Try a different search term.'; ?>
+                            <?php echo empty($search) ? 'There are currently no project records available for your department.' : 'Try a different search term.'; ?>
                         </p>
                         <?php if (!empty($search)) : ?>
                             <a href="hodviewproject.php" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">

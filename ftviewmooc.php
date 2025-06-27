@@ -2,10 +2,21 @@
 require_once 'config.php';
 require_once 'ftheader.php';
 
-// Fetching data from the mooc_courses table
-$sql = "SELECT name, usn FROM mooc_courses ORDER BY usn";
-$result = $conn->query($sql);
+// Get faculty's department code
+$facultyDept = $_SESSION['dept_code'];
 
+// Fetch distinct students with MOOC courses in the same department
+$sql = "SELECT DISTINCT m.usn, m.name 
+        FROM mooc_courses m
+        JOIN students s ON m.usn = s.usn
+        WHERE s.dept_code = ?
+        ORDER BY m.usn";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $facultyDept);
+$stmt->execute();
+$result = $stmt->get_result();
+
+// Extract USN numbers for range filter
 $usnNumbers = [];
 if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
@@ -95,7 +106,7 @@ unset($_SESSION['selected_mooc']);
                 </svg>
             </div>
             <h1 class="text-3xl font-bold text-white mb-2">MOOC Course Details</h1>
-            <p class="text-blue-100 font-medium">Select the MOOC Course Records to view them</p>
+            <p class="text-blue-100 font-medium">Select student records to view their MOOC courses</p>
         </div>
 
         <div class="bg-white rounded-b-xl shadow-md overflow-hidden p-6">
@@ -171,7 +182,7 @@ unset($_SESSION['selected_mooc']);
                                           </tr>";
                                 }
                             } else {
-                                echo "<tr><td colspan='3' class='px-6 py-4 text-center text-sm text-gray-500'>No records found</td></tr>";
+                                echo "<tr><td colspan='3' class='px-6 py-4 text-center text-sm text-gray-500'>No records found in your department</td></tr>";
                             }
                             ?>
                         </tbody>
@@ -193,72 +204,6 @@ unset($_SESSION['selected_mooc']);
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Handle checkbox clicks
-            document.querySelectorAll('.checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', function() {
-                    // Toggle row selection style
-                    const row = this.closest('tr');
-                    if (this.checked) {
-                        row.classList.add('row-selected');
-                    } else {
-                        row.classList.remove('row-selected');
-                    }
-                    
-                    // Hide error message if showing
-                    document.getElementById('errorMessage').classList.add('hidden');
-                });
-            });
-
-            // Form validation
-            document.getElementById('checkboxForm').addEventListener('submit', function(e) {
-                const checkboxes = document.querySelectorAll('.checkbox:checked');
-                if (checkboxes.length === 0) {
-                    e.preventDefault();
-                    document.getElementById('errorMessage').classList.remove('hidden');
-                } else {
-                    // Collect all selected values
-                    const selectedData = Array.from(checkboxes).map(cb => cb.value);
-                    // Create a hidden input to send all selected data
-                    const hiddenInput = document.createElement('input');
-                    hiddenInput.type = 'hidden';
-                    hiddenInput.name = 'selected_data';
-                    hiddenInput.value = JSON.stringify(selectedData);
-                    this.appendChild(hiddenInput);
-                }
-            });
-
-            // Make rows clickable for selection
-            document.querySelectorAll('#moocTable tbody tr').forEach(row => {
-                row.addEventListener('click', (e) => {
-                    if (!e.target.closest('a, button, input')) {
-                        const checkbox = row.querySelector('.checkbox');
-                        checkbox.checked = !checkbox.checked;
-                        checkbox.dispatchEvent(new Event('change'));
-                    }
-                });
-            });
-
-            // Add event listeners for Enter key in search fields
-            document.getElementById('searchInput').addEventListener('keypress', function (e) {
-                if (e.key === 'Enter') {
-                    filterTable();
-                }
-            });
-
-            document.getElementById('usnMin').addEventListener('keypress', function (e) {
-                if (e.key === 'Enter') {
-                    applyUsnRangeFilter();
-                }
-            });
-
-            document.getElementById('usnMax').addEventListener('keypress', function (e) {
-                if (e.key === 'Enter') {
-                    applyUsnRangeFilter();
-                }
-            });
-        });
-
         // Function to extract numeric part from USN
         function getUsnNumber(usn) {
             const matches = usn.match(/\d{3}$/);
@@ -340,7 +285,7 @@ unset($_SESSION['selected_mooc']);
             }
         }
 
-        // Function to filter table based on search input
+        // Filter table based on search input
         function filterTable() {
             const searchInput = document.getElementById('searchInput').value.toLowerCase();
             const rows = document.querySelectorAll('#moocTable tbody tr');
@@ -360,6 +305,67 @@ unset($_SESSION['selected_mooc']);
             
             updateFilterStatus();
         }
+
+        // Form validation
+        document.getElementById('checkboxForm').addEventListener('submit', function(e) {
+            const checkboxes = document.querySelectorAll('.checkbox:checked');
+            if (checkboxes.length === 0) {
+                e.preventDefault();
+                document.getElementById('errorMessage').classList.remove('hidden');
+            } else {
+                // Collect all selected values
+                const selectedData = Array.from(checkboxes).map(cb => cb.value);
+                // Create a hidden input to send all selected data
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'selected_data';
+                hiddenInput.value = JSON.stringify(selectedData);
+                this.appendChild(hiddenInput);
+            }
+        });
+
+        // Attach event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Make rows clickable for selection
+            document.querySelectorAll('#moocTable tbody tr').forEach(row => {
+                row.addEventListener('click', (e) => {
+                    if (!e.target.closest('a, button, input')) {
+                        const checkbox = row.querySelector('.checkbox');
+                        checkbox.checked = !checkbox.checked;
+                        checkbox.dispatchEvent(new Event('change'));
+                        document.getElementById('errorMessage').classList.add('hidden');
+                    }
+                });
+            });
+
+            // Checkbox change event
+            document.querySelectorAll('.checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    this.closest('tr').classList.toggle('row-selected', this.checked);
+                });
+            });
+
+            // Search input event
+            document.getElementById('searchInput').addEventListener('input', filterTable);
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    filterTable();
+                }
+            });
+
+            // USN range input events
+            document.getElementById('usnMin').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    applyUsnRangeFilter();
+                }
+            });
+
+            document.getElementById('usnMax').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    applyUsnRangeFilter();
+                }
+            });
+        });
     </script>
 </body>
 </html>

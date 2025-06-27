@@ -10,6 +10,19 @@ if (!isset($_SESSION['email']) || !isset($_SESSION['name']) || !isset($_SESSION[
 $hodName = $_SESSION['name'];
 $empId = $_SESSION['employee_id'];
 
+// In hodheader.php, after the session checks
+// In hodheader.php, after the session checks
+if (!isset($_SESSION['dept'])) {
+    // Get department code from database if not in session
+    $query = "SELECT dept FROM hod WHERE employee_id = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("s", $_SESSION['employee_id']);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $hodData = $result->fetch_assoc();
+    $_SESSION['dept'] = $hodData['dept']; // Store department in session
+}
+
 // Get current page for active tab highlighting
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>

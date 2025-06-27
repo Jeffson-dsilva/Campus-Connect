@@ -2,6 +2,9 @@
 require_once 'config.php';
 require_once 'hodheader.php';
 
+// Get HOD's department code
+$hodDept = $_SESSION['dept'];
+
 // Pagination setup
 $records_per_page = 10;
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -10,17 +13,44 @@ $offset = ($page - 1) * $records_per_page;
 // Search functionality
 $search = isset($_GET['search']) ? $conn->real_escape_string($_GET['search']) : '';
 $search_condition = '';
+$search_params = [];
+
 if (!empty($search)) {
-    $search_condition = "WHERE name LIKE '%$search%' OR RIGHT(usn, 3) LIKE '%$search%'";
+    $search_condition = "AND (m.name LIKE ? OR m.usn LIKE ?)";
+    $search_param = "%$search%";
+    $search_params[] = $search_param;
+    $search_params[] = $search_param;
 }
 
-// Get total number of records with search condition
-$total_records = $conn->query("SELECT COUNT(*) FROM mooc_courses $search_condition")->fetch_row()[0];
+// Get total number of unique students
+$total_records_query = "SELECT COUNT(DISTINCT m.usn) FROM mooc_courses m 
+                       JOIN students s ON m.usn = s.usn 
+                       WHERE s.dept_code = ? $search_condition";
+$stmt = $conn->prepare($total_records_query);
+
+if (!empty($search)) {
+    $stmt->bind_param("sss", $hodDept, $search_param, $search_param);
+} else {
+    $stmt->bind_param("s", $hodDept);
+}
+$stmt->execute();
+$total_records = $stmt->get_result()->fetch_row()[0];
 $total_pages = ceil($total_records / $records_per_page);
 
-// Database query with pagination and sorting
-$sql = "SELECT usn, name FROM mooc_courses $search_condition ORDER BY usn ASC LIMIT $offset, $records_per_page";
-$result = $conn->query($sql);
+// Main query - modified to get distinct students
+$sql = "SELECT DISTINCT m.usn, m.name FROM mooc_courses m 
+        JOIN students s ON m.usn = s.usn 
+        WHERE s.dept_code = ? $search_condition 
+        ORDER BY m.usn ASC LIMIT ?, ?";
+$stmt = $conn->prepare($sql);
+
+if (!empty($search)) {
+    $stmt->bind_param("sssii", $hodDept, $search_param, $search_param, $offset, $records_per_page);
+} else {
+    $stmt->bind_param("sii", $hodDept, $offset, $records_per_page);
+}
+$stmt->execute();
+$result = $stmt->get_result();
 
 $title = "MOOC Course Details";
 ?>
@@ -42,7 +72,7 @@ $title = "MOOC Course Details";
             <div class="bg-gradient-to-r from-indigo-600 to-indigo-800 px-6 py-4">
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
-                        <h2 class="text-xl font-semibold text-white">MOOC Course Records</h2>
+                        <h2 class="text-xl font-semibold text-white">MOOC Course Records <span class="text-sm font-normal">(<?php echo $hodDept; ?> Department)</span></h2>
                         <p class="text-indigo-100 text-sm mt-1">View all student MOOC course details</p>
                     </div>
                     <div class="flex items-center gap-4 w-full sm:w-auto">
@@ -64,7 +94,7 @@ $title = "MOOC Course Details";
                             </div>
                         </form>
                         <div class="bg-indigo-500 text-white px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap">
-                            <?php echo $total_records; ?> records
+                            <?php echo $total_records; ?> students
                         </div>
                     </div>
                 </div>
@@ -107,7 +137,7 @@ $title = "MOOC Course Details";
                                             <form action="hodmooc_details.php" method="GET" class="inline">
                                                 <input type="hidden" name="usn" value="<?php echo htmlspecialchars($row["usn"]); ?>">
                                                 <button type="submit" class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                                    <i class="fas fa-eye mr-1"></i> View
+                                                    <i class="fas fa-eye mr-1"></i> View Courses
                                                 </button>
                                             </form>
                                         </td>
@@ -125,7 +155,7 @@ $title = "MOOC Course Details";
                             <?php echo empty($search) ? 'No records found' : 'No matching records'; ?>
                         </h3>
                         <p class="mt-1 text-sm text-gray-500">
-                            <?php echo empty($search) ? 'There are currently no MOOC course records available.' : 'Try a different search term.'; ?>
+                            <?php echo empty($search) ? 'There are currently no MOOC course records available for your department.' : 'Try a different search term.'; ?>
                         </p>
                         <?php if (!empty($search)) : ?>
                             <a href="hodview_mooc.php" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
@@ -141,7 +171,7 @@ $title = "MOOC Course Details";
                 <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
                     <div class="flex flex-col sm:flex-row items-center justify-between">
                         <div class="text-sm text-gray-500 mb-4 sm:mb-0">
-                            Showing <span class="font-medium"><?php echo $offset + 1; ?></span> to <span class="font-medium"><?php echo min($offset + $records_per_page, $total_records); ?></span> of <span class="font-medium"><?php echo $total_records; ?></span> results
+                            Showing <span class="font-medium"><?php echo $offset + 1; ?></span> to <span class="font-medium"><?php echo min($offset + $records_per_page, $total_records); ?></span> of <span class="font-medium"><?php echo $total_records; ?></span> students
                         </div>
                         
                         <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">

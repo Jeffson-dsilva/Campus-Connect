@@ -2,9 +2,16 @@
 require_once 'config.php';
 require_once 'ftheader.php';
 
-// Fetching data from the project table
-$sql = "SELECT name, usn FROM project ORDER BY usn";
-$result = $conn->query($sql);
+// Fetching data from the project table for students in the same department
+$sql = "SELECT p.name, p.usn 
+        FROM project p
+        JOIN students s ON p.usn = s.usn
+        WHERE s.dept_code = ?
+        ORDER BY p.usn";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $_SESSION['dept_code']);
+$stmt->execute();
+$result = $stmt->get_result();
 
 $usnNumbers = [];
 if ($result->num_rows > 0) {
@@ -173,7 +180,7 @@ unset($_SESSION['selected_projects']);
                                           </tr>";
                                 }
                             } else {
-                                echo "<tr><td colspan='3' class='px-6 py-4 text-center text-sm text-gray-500'>No records found</td></tr>";
+                                echo "<tr><td colspan='3' class='px-6 py-4 text-center text-sm text-gray-500'>No records found in your department</td></tr>";
                             }
                             ?>
                         </tbody>

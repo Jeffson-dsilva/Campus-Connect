@@ -10,6 +10,22 @@ if (!isset($_SESSION['email']) || !isset($_SESSION['name']) || !isset($_SESSION[
 $facultyName = $_SESSION['name'];
 $empId = $_SESSION['employee_id'];
 
+// Get faculty department if not already in session
+if (!isset($_SESSION['dept_code'])) {
+    $deptQuery = "SELECT dept_code FROM faculty WHERE employee_id = ?";
+    $stmt = $conn->prepare($deptQuery);
+    $stmt->bind_param("s", $empId);
+    $stmt->execute();
+    $deptResult = $stmt->get_result();
+
+    if ($deptResult->num_rows > 0) {
+        $_SESSION['dept_code'] = $deptResult->fetch_assoc()['dept_code'];
+    } else {
+        $_SESSION['dept_code'] = 'Unknown';
+    }
+    $stmt->close();
+}
+
 // Get current page for active tab highlighting
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
@@ -141,9 +157,14 @@ $current_page = basename($_SERVER['PHP_SELF']);
                                     <?php echo htmlspecialchars($facultyName); ?>
                                 </p>
                                 <p class="text-xs text-gray-500 truncate">
-                                    <?php echo htmlspecialchars($_SESSION['email']); ?></p>
+                                    <?php echo htmlspecialchars($_SESSION['email']); ?>
+                                </p>
                                 <p class="text-xs text-gray-500 mt-1">
                                     Faculty ID: <span class="font-medium"><?php echo htmlspecialchars($empId); ?></span>
+                                </p>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    Department: <span
+                                        class="font-medium"><?php echo htmlspecialchars($_SESSION['dept_code']); ?></span>
                                 </p>
                             </div>
                             <a href="facultyupdatepassword.php"
@@ -196,7 +217,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <i class="fas fa-chalkboard-teacher mr-2"></i> Class Ops
                 </a>
             </div>
-            <div class="pt-4 pb-3 border-t border-gray-200">
+           <div class="pt-4 pb-3 border-t border-gray-200">
                 <div class="flex items-center px-4">
                     <div class="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white">
                         <?php echo strtoupper(substr($facultyName, 0, 1)); ?>
@@ -204,6 +225,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <div class="ml-3">
                         <p class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($facultyName); ?></p>
                         <p class="text-xs text-gray-500"><?php echo htmlspecialchars($empId); ?></p>
+                        <p class="text-xs text-gray-500">Dept: <?php echo htmlspecialchars($_SESSION['dept_code']); ?></p>
                     </div>
                 </div>
                 <div class="mt-3 px-2 space-y-1">
@@ -219,6 +241,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </div>
         </div>
     </header>
+
 
     <script>
         // Mobile menu toggle

@@ -76,6 +76,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $_SESSION['name'] = $row['name'];
                 $_SESSION['employee_id'] = $row['employee_id'];
                 $_SESSION['usn'] = ''; // Empty for HOD
+                $_SESSION['dept_code'] = $row['dept'];
 
                 header("Location: hoddashboard.php");
                 exit();

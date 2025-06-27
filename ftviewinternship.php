@@ -1,10 +1,16 @@
 <?php
 require_once 'config.php';
 require_once 'ftheader.php';
-
-// Fetching data from the internship table
-$sql = "SELECT name, usn FROM internship ORDER BY usn";
-$result = $conn->query($sql);
+// Fetching data from the internship table for students in the same department
+$sql = "SELECT i.name, i.usn 
+        FROM internship i
+        JOIN students s ON i.usn = s.usn
+        WHERE s.dept_code = ?
+        ORDER BY i.usn";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $_SESSION['dept_code']);
+$stmt->execute();
+$result = $stmt->get_result();
 
 // Extract USN numbers for range filter
 $usnNumbers = [];
@@ -188,7 +194,7 @@ unset($_SESSION['selected_internships']);
                                           </tr>";
                                 }
                             } else {
-                                echo "<tr><td colspan='3' class='px-6 py-4 text-center text-sm text-gray-500'>No records found</td></tr>";
+                                echo "<tr><td colspan='3' class='px-6 py-4 text-center text-sm text-gray-500'>No records found in your department</td></tr>";
                             }
                             ?>
                         </tbody>
