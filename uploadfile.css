@@ -1,322 +1,290 @@
-
-main {
-    margin: 20px auto;
-    padding: 20px;
-    flex: 1;
-    display: flex;
-    justify-content: center; /* Center container horizontally */
-    align-items: center; /* Center container vertically */
-    max-width: 800px; /* Increased max width for larger content area */
-}
-
-.section {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-}
-
-.upload-section,
-.display-section,
-.delete-section {
-    padding: 20px;
-}
-
-.box {
-    display: flex;
-    flex-direction: column;
-    padding: 20px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    background-color: white;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+/* Modal Container */
+.modal-container {
+    position: relative;
     width: 100%;
-    transition: transform 0.2s;
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
 }
 
-.file-input {
-    margin-bottom: 20px;
-    width: 80%; /* Center the input */
-    padding: 10px;
-    border-radius: 5px; /* Rounded edges */
-    border: 1px solid lightblue; /* Light blue border */
+/* Modal Styles */
+.modal {
+    display: none;
+    width: 90%;
+    max-width: 600px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    margin: 20px auto;
+    overflow: hidden;
+    animation: fadeIn 0.3s ease-out;
 }
 
-/* Updated button styles for vertical alignment */
-.upload-button,
-.display-button,
-.delete-button,
-.back-to-menu {
-    background-color: #529296;
-    color: white;
+.modal.active {
+    display: block;
+}
+
+.modal-content {
+    padding: 0;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: #f5f5f7;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.4rem;
+    color: #333;
+    font-weight: 600;
+}
+
+.close-modal {
+    background: none;
     border: none;
-    padding: 15px 30px;
+    font-size: 1.5rem;
     cursor: pointer;
-    transition: background-color 0.3s;
-    margin: 10px 0; /* Space between buttons */
-    font-size: 16px; /* Larger font size for visibility */
-    border-radius: 5px; /* Rounded edges */
-    width: 100%; /* Stretch button to container width */
-    max-width: 300px; /* Limit button width */
-    text-align: center;
+    color: #888;
+    transition: color 0.2s;
 }
 
-.upload-button:hover,
-.back-to-menu:hover {
-    background-color: #218838;
+.close-modal:hover {
+    color: #555;
 }
 
-.back-to-menu {
-    background-color: black;
+.modal-body {
+    padding: 25px;
 }
 
-.back-to-menu:hover {
-    background-color: #484545;
+/* Radio Group Styles */
+.radio-group {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
 }
 
-/* Animation styles */
-.fade-in {
-    animation: fadeIn 0.5s forwards;
+.radio-option {
+    position: relative;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.radio-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
 }
 
-
-.logout-button {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    padding: 10px 20px;
+.radio-option label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     cursor: pointer;
-    margin-top: 10px;
+    padding: 10px 15px;
+    border-radius: 8px;
+    background: #f5f5f7;
+    transition: all 0.2s;
 }
 
-.logout-button:hover {
-    background-color: #c82333;
+.radio-button {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid #9e9e9e;
+    position: relative;
+    transition: all 0.2s;
 }
 
-/* Style for the success and error popups */
-.popup {
-    position: fixed;
+.radio-option input[type="radio"]:checked + label {
+    background: #f0e6ff;
+}
+
+.radio-option input[type="radio"]:checked + label .radio-button {
+    border-color: #7b1fa2;
+    background: #7b1fa2;
+}
+
+.radio-option input[type="radio"]:checked + label .radio-button::after {
+    content: "";
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    padding: 20px;
-    z-index: 9999;
-    width: 300px;
-    text-align: center;
 }
 
-.popup p {
-    font-size: 16px;
-    margin: 10px 0;
+.radio-label {
+    font-size: 0.95rem;
+    color: #333;
 }
 
-.popup .popup-icon {
-    font-size: 30px;
-    margin-bottom: 10px;
+/* File Upload Styles */
+.file-upload {
+    margin-bottom: 25px;
 }
 
-.popup button {
-    background-color: #4CAF50; 
-    color: white;
-    border: none;
-    padding: 10px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 14px;
-    cursor: pointer;
-    border-radius: 5px;
-}
-
-.popup button:hover {
-    background-color: #45a049;
-}
-
-.popup-success {
-    border-left: 5px solid #4CAF50;
-}
-
-.popup-error {
-    border-left: 5px solid #f44336;
-}
-
-.popup-close {
-    background-color: #f44336;
-}
-
-.popup-close:hover {
-    background-color: #e53935;
-}
-
-.popup .popup-icon i {
-    color: #4CAF50; /* Green for success */
-}
-
-.popup.error .popup-icon i {
-    color: red; /* Red for error */
-}
-
-.confirmation-popup .popup-content {
+.file-label {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    padding: 30px;
+    border: 2px dashed #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
 }
 
-.confirmation-popup .popup-content button {
-    margin: 5px;
+.file-label:hover {
+    border-color: #b39ddb;
+    background: #f9f5ff;
 }
 
-.confirmation-popup .popup-icon i {
-    color: #ff9800;
+.file-label i {
+    font-size: 2rem;
+    color: #7b1fa2;
+    margin-bottom: 10px;
 }
 
-
-
-
-@import url('https://fonts.googleapis.com/css?family=Lato:400,500,600,700&display=swap');
-
-.wrapper {
-  display: inline-flex;
-  background: none; /* Remove the background */
-  height: auto; /* Adjust height to auto */
-  width: auto; /* Adjust width to auto */
-  align-items: center;
-  justify-content: flex-start; /* Align to the left */
-  border-radius: 5px;
-  padding: 0; /* Remove padding */
-  box-shadow: none; /* Remove shadow */
+.file-label span {
+    color: #666;
 }
 
-.wrapper .option {
-  background: #fff;
-  height: 40px; /* Set the height of the button */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 10px;
-  padding: 0 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  border: 2px solid lightgrey; /* Border for buttons */
-  transition: all 0.3s ease;
+#fileInput {
+    display: none;
 }
 
-.wrapper .option .dot {
-  height: 16px; /* Adjust dot size */
-  width: 16px;
-  background: #d9d9d9;
-  border-radius: 50%;
-  position: relative;
-  margin-right: 8px; /* Space between dot and text */
+/* Button Styles */
+.btn-upload, .btn-display, .btn-delete, .btn-print {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
-.wrapper .option .dot::before {
-  position: absolute;
-  content: "";
-  top: 3px;
-  left: 3px;
-  width: 10px;
-  height: 10px;
-  background: #0069d9;
-  border-radius: 50%;
-  opacity: 0;
-  transform: scale(1.5);
-  transition: all 0.3s ease;
+.btn-upload {
+    background: #7b1fa2;
+    color: white;
 }
 
-input[type="radio"] {
-  display: none;
+.btn-upload:hover {
+    background: #6a1b9a;
 }
 
-/* Adjusting styles for delete radio button */
-#display-option-1:checked ~ .option-1,
-#display-option-2:checked ~ .option-2 {
-  border-color: #0069d9;  /* Blue border when selected */
-  background-color: #0069d9;  /* Blue background when selected */
+.btn-display {
+    background: #616161;
+    color: white;
+    margin-bottom: 20px;
 }
 
-#display-option-1:checked ~ .option-1 .dot,
-#display-option-2:checked ~ .option-2 .dot {
-  background-color: #fff;  /* White dot when selected */
+.btn-display:hover {
+    background: #424242;
 }
 
-#display-option-1:checked ~ .option-1 .dot::before,
-#display-option-2:checked ~ .option-2 .dot::before {
-  opacity: 1;
-  transform: scale(1);  /* Show the inner circle when selected */
+.btn-delete {
+    background: #d32f2f;
+    color: white;
 }
 
-#display-option-1:checked ~ .option-1 span,
-#display-option-2:checked ~ .option-2 span {
-  color: #fff;  /* Change text color to white when selected */
+.btn-delete:hover {
+    background: #b71c1c;
 }
 
+.btn-print {
+    background: #455a64;
+    color: white;
+    margin-bottom: 20px;
+}
 
+.btn-print:hover {
+    background: #263238;
+}
 
+/* Table Styles */
+.table-container {
+    overflow-x: auto;
+    margin-top: 20px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.data-table th {
+    background: #f5f5f7;
+    font-weight: 500;
+    color: #333;
+}
+
+.data-table tr:hover {
+    background: #f9f5ff;
+}
+
+/* Confirmation Message */
+.confirmation-message {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px;
+    background: #fff8e1;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    color: #ff8f00;
+}
+
+.confirmation-message i {
+    font-size: 1.2rem;
+}
+
+/* Status Message */
+.status-message {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-
-  /* Main Content */
-  main {
-      margin: 30px auto;
-      padding: 15px;
-      width: 95%; /* Full width */
-  }
-
-  /* Boxes */
-  .box {
-      width: 100%;
-  }
-
-  .file-input {
-      width: 90%; /* Adjust input width */
-  }
-
-  /* Buttons */
-  .upload-button,
-  .display-button,
-  .delete-button,
-  .back-to-menu {
-      width: 90%; /* Full width */
-      font-size: 14px; /* Adjust font size */
-      padding: 12px 20px;
-  }
-
-  /* Popup */
-  .popup {
-      width: 90%; /* Full width for smaller screens */
-  }
-
-  /* Wrapper Radio Buttons */
-  .wrapper .option {
-      height: 35px; /* Reduce button height */
-      font-size: 14px; /* Adjust font size */
-  }
-}
-
-@media (max-width: 480px) {
-
-  .upload-button,
-  .display-button,
-  .delete-button,
-  .back-to-menu {
-      font-size: 12px;
-      padding: 10px;
-  }
-
-  .popup {
-      width: 95%; /* Adjust popup width */
-  }
+    .modal {
+        width: 95%;
+    }
+    
+    .radio-group {
+        flex-direction: column;
+    }
+    
+    .modal-header h3 {
+        font-size: 1.2rem;
+    }
 }

@@ -10,8 +10,6 @@ if (!isset($_SESSION['email']) || !isset($_SESSION['name']) || !isset($_SESSION[
 $hodName = $_SESSION['name'];
 $empId = $_SESSION['employee_id'];
 
-// In hodheader.php, after the session checks
-// In hodheader.php, after the session checks
 if (!isset($_SESSION['dept'])) {
     // Get department code from database if not in session
     $query = "SELECT dept FROM hod WHERE employee_id = ?";
@@ -79,6 +77,17 @@ $current_page = basename($_SERVER['PHP_SELF']);
             opacity: 1;
             transform: translateY(0);
             visibility: visible;
+        }
+
+        .dept-badge {
+            background-color: #e0f2fe;
+            color: #0369a1;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
         }
     </style>
 </head>
@@ -149,9 +158,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
                                 </p>
                                 <p class="text-xs text-gray-500 truncate">
                                     <?php echo htmlspecialchars($_SESSION['email']); ?></p>
-                                <p class="text-xs text-gray-500 mt-1">
-                                    HOD ID: <span class="font-medium"><?php echo htmlspecialchars($empId); ?></span>
-                                </p>
+                                <div class="flex items-center mt-1">
+                                    <p class="text-xs text-gray-500 mr-2">
+                                        HOD ID: <span class="font-medium"><?php echo htmlspecialchars($empId); ?></span>
+                                    </p>
+                                </div>
+                                <div class="flex items-center mt-1">
+                                    <p class="text-xs text-gray-500 mr-1">Dept:</p>
+                                    <span class="dept-badge"><?php echo htmlspecialchars($_SESSION['dept']); ?></span>
+                                </div>
                             </div>
                             <a href="hodupdatePassword.php"
                                 class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors duration-150">
@@ -206,7 +221,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     </div>
                     <div class="ml-3">
                         <p class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($hodName); ?></p>
-                        <p class="text-xs text-gray-500"><?php echo htmlspecialchars($empId); ?></p>
+                        <div class="flex items-center">
+                            <p class="text-xs text-gray-500 mr-2"><?php echo htmlspecialchars($empId); ?></p>
+                            <span class="dept-badge"><?php echo htmlspecialchars($_SESSION['dept']); ?></span>
+                        </div>
                     </div>
                 </div>
                 <div class="mt-3 px-2 space-y-1">
@@ -259,3 +277,5 @@ $current_page = basename($_SERVER['PHP_SELF']);
             window.location.href = 'login.php';
         }
     </script>
+</body>
+</html>

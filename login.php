@@ -31,14 +31,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     } else {
         // Validate credentials against the database based on role
         if ($role === 'student') {
-            $query = "SELECT * FROM students WHERE usn = ? AND email = ? AND password = ?";
+            $query = "SELECT * FROM students WHERE usn = ? AND email = ?";
             $stmt = $conn->prepare($query);
-            $stmt->bind_param("sss", $usn, $email, $password);
+            $stmt->bind_param("ss", $usn, $email);
         } else {
             $table = $role === 'faculty' ? 'faculty' : 'hod';
-            $query = "SELECT * FROM $table WHERE email = ? AND password = ?";
+            $query = "SELECT * FROM $table WHERE email = ?";
             $stmt = $conn->prepare($query);
-            $stmt->bind_param("ss", $email, $password);
+            $stmt->bind_param("s", $email);
         }
 
         $stmt->execute();
@@ -46,44 +46,60 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         if ($result->num_rows === 1) {
             $row = $result->fetch_assoc();
-            if ($role === 'student') {
-                // Set all required session variables for ClassOps
-                $_SESSION['logged_in'] = true;
-                $_SESSION['user_type'] = 'student';
-                $_SESSION['email'] = $email;
-                $_SESSION['usn'] = $row['usn'];
-                $_SESSION['name'] = $row['name'];
-                $_SESSION['employee_id'] = ''; // Empty for students
-                $_SESSION['dept_code'] = $row['dept_code'];
-
-                header("Location: stDashboard.php");
-                exit();
-            } elseif ($role === 'faculty') {
-                // Set faculty-specific session variables
-                $_SESSION['logged_in'] = true;
-                $_SESSION['user_type'] = 'faculty';
-                $_SESSION['email'] = $email;
-                $_SESSION['name'] = $row['name'];
-                $_SESSION['employee_id'] = $row['employee_id'];
-                $_SESSION['usn'] = ''; // Empty for faculty
-                $_SESSION['dept_code'] = $row['dept_code'];
-
-                header("Location: ftDashboard.php");
-                exit();
-            } elseif ($role === 'hod') {
-                // Set HOD-specific session variables
-                $_SESSION['logged_in'] = true;
-                $_SESSION['user_type'] = 'hod'; // Or 'faculty' if HOD should have same access
-                $_SESSION['email'] = $email;
-                $_SESSION['name'] = $row['name'];
-                $_SESSION['employee_id'] = $row['employee_id'];
-                $_SESSION['usn'] = ''; // Empty for HOD
-                $_SESSION['dept_code'] = $row['dept'];
-
-                header("Location: hoddashboard.php");
-                exit();
+            
+            // Check both hashed and plaintext password
+            $passwordMatch = false;
+            
+            // First try password_verify for hashed passwords
+            if (isset($row['password']) && password_verify($password, $row['password'])) {
+                $passwordMatch = true;
             }
+            // If not matched, check plaintext (for backward compatibility)
+            elseif (isset($row['password']) && $password === $row['password']) {
+                $passwordMatch = true;
+            }
+            
+            if ($passwordMatch) {
+                if ($role === 'student') {
+                    // Set all required session variables for ClassOps
+                    $_SESSION['logged_in'] = true;
+                    $_SESSION['user_type'] = 'student';
+                    $_SESSION['email'] = $email;
+                    $_SESSION['usn'] = $row['usn'];
+                    $_SESSION['name'] = $row['name'];
+                    $_SESSION['employee_id'] = ''; // Empty for students
+                    $_SESSION['dept_code'] = $row['dept_code'];
 
+                    header("Location: stDashboard.php");
+                    exit();
+                } elseif ($role === 'faculty') {
+                    // Set faculty-specific session variables
+                    $_SESSION['logged_in'] = true;
+                    $_SESSION['user_type'] = 'faculty';
+                    $_SESSION['email'] = $email;
+                    $_SESSION['name'] = $row['name'];
+                    $_SESSION['employee_id'] = $row['employee_id'];
+                    $_SESSION['usn'] = ''; // Empty for faculty
+                    $_SESSION['dept_code'] = $row['dept_code'];
+
+                    header("Location: ftDashboard.php");
+                    exit();
+                } elseif ($role === 'hod') {
+                    // Set HOD-specific session variables
+                    $_SESSION['logged_in'] = true;
+                    $_SESSION['user_type'] = 'hod'; // Or 'faculty' if HOD should have same access
+                    $_SESSION['email'] = $email;
+                    $_SESSION['name'] = $row['name'];
+                    $_SESSION['employee_id'] = $row['employee_id'];
+                    $_SESSION['usn'] = ''; // Empty for HOD
+                    $_SESSION['dept_code'] = $row['dept'];
+
+                    header("Location: hoddashboard.php");
+                    exit();
+                }
+            } else {
+                $error = "Email or Password incorrect.";
+            }
         } else {
             $error = "Email or Password incorrect.";
         }

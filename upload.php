@@ -5,7 +5,7 @@ $password = "";
 $dbname = "college_ipm_system";
 $port = 3307;
 
-$conn = new mysqli($servername, $username, $password, $dbname,$port);
+$conn = new mysqli($servername, $username, $password, $dbname, $port);
 
 if ($conn->connect_error) {
     echo json_encode(['success' => false, 'message' => 'Connection failed: ' . $conn->connect_error]);
@@ -18,40 +18,60 @@ $jsonData = $data['data'];
 
 if ($type == 'students') {
     $tableName = 'students';
-    $fields = ['Name', 'USN', 'Email', 'Password'];
+    $fields = ['Name', 'USN', 'Email', 'Password', 'dept_code'];
+    $uniqueField = 'USN';
 } else {
     $tableName = 'faculty';
-    $fields = ['Employee_ID', 'Name', 'Email', 'Password'];
+    $fields = ['Employee_ID', 'Name', 'Email', 'Password', 'dept_code'];
+    $uniqueField = 'Employee_ID';
 }
 
 $duplicates = 0;
 $uploaded = 0;
+$invalidDept = 0;
 
 foreach ($jsonData as $row) {
-    $values = [];
+    // Validate required fields including department
+    $missingFields = false;
     foreach ($fields as $field) {
-        if (isset($row[$field])) {
-            $values[] = $row[$field];
+        if (!isset($row[$field == 'dept_code' ? 'Department' : $field])) {
+            $missingFields = true;
+            break;
         }
     }
+    if ($missingFields) continue;
+
+    // Check if department exists
+    $deptCheck = $conn->prepare("SELECT dept_code FROM departments WHERE dept_code = ?");
+    $deptCheck->bind_param("s", $row['Department']);
+    $deptCheck->execute();
+    $deptCheck->store_result();
     
-    // Check if any required field is missing
-    if (count($values) !== count($fields)) {
+    if ($deptCheck->num_rows == 0) {
+        $invalidDept++;
         continue;
     }
 
+    // Prepare values for insertion
+    $values = [
+        $row['Name'],
+        $type == 'students' ? $row['USN'] : $row['Employee_ID'],
+        $row['Email'],
+        password_hash($row['Password'], PASSWORD_DEFAULT),
+        $row['Department']
+    ];
+
     // Check for duplicates before inserting
-    $emailField = $type == 'students' ? 'Email' : 'email';
-    $checkQuery = "SELECT * FROM $tableName WHERE $emailField = ?";
+    $checkQuery = "SELECT * FROM $tableName WHERE $uniqueField = ?";
     $stmt = $conn->prepare($checkQuery);
-    $stmt->bind_param("s", $values[2]);
+    $stmt->bind_param("s", $values[1]);
     $stmt->execute();
     $result = $stmt->get_result();
 
     if ($result->num_rows == 0) {
-        $insertQuery = "INSERT INTO $tableName (" . implode(',', $fields) . ") VALUES (?, ?, ?, ?)";
+        $insertQuery = "INSERT INTO $tableName (name, " . ($type == 'students' ? 'usn' : 'employee_id') . ", email, password, dept_code) VALUES (?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($insertQuery);
-        $stmt->bind_param("ssss", ...$values);
+        $stmt->bind_param("sssss", ...$values);
         if ($stmt->execute()) {
             $uploaded++;
         }
@@ -62,7 +82,9 @@ foreach ($jsonData as $row) {
 
 $response = [
     'success' => true,
-    'message' => "$uploaded records uploaded successfully! $duplicates duplicate entries ignored."
+    'message' => "$uploaded records uploaded successfully! " . 
+                 ($duplicates > 0 ? "$duplicates duplicate entries ignored. " : "") . 
+                 ($invalidDept > 0 ? "$invalidDept records skipped due to invalid department." : "")
 ];
 
 echo json_encode($response);
