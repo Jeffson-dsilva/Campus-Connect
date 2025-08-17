@@ -452,7 +452,7 @@ $conn->close();
                         </p>
                     </div>
                     <div class="border-t border-gray-200"></div>
-                    <a href="<?php echo defined('BASE_URL') ? BASE_URL . 'app/modules/dashboards/stDashboard.php' : '../dashboards/stDashboard.php'; ?>"
+                    <a href="<?php echo defined('BASE_URL') ? BASE_URL . 'app/login.php' : '../../login.php'; ?>"
                         class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-500 hover:text-white">Sign out</a>
                 </div>
             </div>
